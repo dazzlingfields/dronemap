@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Auckland Controlled Airspace (Mock)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [174.6, -36.9],
+            [174.9, -36.9],
+            [174.9, -36.7],
+            [174.6, -36.7],
+            [174.6, -36.9]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wellington Restricted Zone (Mock)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [174.7, -41.4],
+            [174.9, -41.4],
+            [174.9, -41.2],
+            [174.7, -41.2],
+            [174.7, -41.4]
+          ]
+        ]
+      }
+    }
+  ]
+}
