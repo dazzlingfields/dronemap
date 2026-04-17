@@ -768,19 +768,88 @@
       applyFilter(chip.dataset.filter);
     });
 
-    async function init() {
-      await loadSpots();
-      await loadRestrictedZones();
-      updateCounters();
-      renderRestrictionLayer();
-      applyFilter('all');
-      if (spots.length > 0) selectSpot(spots[0].id, false);
-      await loadWeatherForAllSpots();
-      updateCounters();
-      renderMarkers();
-      renderSpotList(spots.filter(matchesFilter));
-      if (activeSpotId) selectSpot(activeSpotId, false);
-    }
+    async function loadDOCDroneZones() {
+  const url = "https://mapserver.doc.govt.nz/arcgis/rest/services/DOCMaps/DOCMaps/MapServer/0/query?where=1%3D1&outFields=*&f=geojson";
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    restrictedZones = data.features.map(function(f) {
+      return {
+        type: "Feature",
+        properties: {
+          name: f.properties.Name || "DOC Area",
+          raw: f.properties
+        },
+        geometry: f.geometry
+      };
+    });
+
+    airspaceStatusElement.textContent = "DOC Live";
+  } catch (err) {
+    console.error("DOC load failed", err);
+    airspaceStatusElement.textContent = "DOC Failed";
+  }
+}
+
+function renderRestrictionLayer() {
+  restrictionLayer.clearLayers();
+  if (restrictedZones.length > 0) {
+    restrictionLayer.addData({
+      type: 'FeatureCollection',
+      features: restrictedZones
+    });
+  }
+}
+
+function addSpot(lat, lon) {
+  const name = prompt("Enter spot name:");
+  if (!name) return;
+
+  const newSpot = {
+    id: Date.now(),
+    name: name,
+    region: "Custom",
+    lat: lat,
+    lon: lon,
+    tags: ["freestyle"],
+    airspace: "User-added spot. Verify rules.",
+    restriction: false,
+    notes: "User added location"
+  };
+
+  updateSpotValues(newSpot, null);
+  spots.push(newSpot);
+
+  renderMarkers();
+  renderSpotList(spots.filter(matchesFilter));
+  updateCounters();
+}
+
+map.on('click', function(e) {
+  const lat = e.latlng.lat;
+  const lon = e.latlng.lng;
+
+  const confirmAdd = confirm("Add new FPV spot here?");
+  if (confirmAdd) {
+    addSpot(lat, lon);
+  }
+});
+
+async function init() {
+  await loadSpots();
+  await loadDOCDroneZones();
+  updateCounters();
+  renderRestrictionLayer();
+  applyFilter('all');
+  if (spots.length > 0) selectSpot(spots[0].id, false);
+  await loadWeatherForAllSpots();
+  updateCounters();
+  renderMarkers();
+  renderSpotList(spots.filter(matchesFilter));
+  if (activeSpotId) selectSpot(activeSpotId, false);
+}
 
     init();
   </script>
