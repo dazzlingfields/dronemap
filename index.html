@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NZ FPV Spot Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(15, 23, 42, 0.92);
+      --panel-2: rgba(30, 41, 59, 0.88);
+      --text: #e5eefc;
+      --muted: #9db0cf;
+      --accent: #4ade80;
+      --accent-2: #38bdf8;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: rgba(148, 163, 184, 0.18);
+      --shadow: 0 18px 45px rgba(0,0,0,0.34);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at top, #12213e 0%, #08101d 60%, #050914 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(8,14,28,0.96));
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #22c55e, #38bdf8);
+      color: #08101d;
+      font-weight: 900;
+      box-shadow: 0 10px 28px rgba(56,189,248,0.22);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cbd5e1;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .input, .select, .button {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.75);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      outline: none;
+    }
+
+    .input::placeholder { color: #71819f; }
+    .button {
+      cursor: pointer;
+      font-weight: 700;
+      background: linear-gradient(135deg, #22c55e, #38bdf8);
+      color: #08101d;
+      border: none;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+    .button:hover { transform: translateY(-1px); filter: brightness(1.03); }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 11px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      user-select: none;
+    }
+
+    .chip.active {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #d7f3ff;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .spot-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .spot {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.78);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .spot:hover { border-color: rgba(56,189,248,0.4); transform: translateY(-1px); }
+    .spot-title { font-weight: 700; margin-bottom: 4px; }
+    .spot-meta { color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 0.78rem;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.12);
+      border: 1px solid rgba(148,163,184,0.18);
+    }
+    .badge.good { color: #86efac; border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); }
+    .badge.warn { color: #fde68a; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); }
+    .badge.bad { color: #fca5a5; border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); }
+
+    .map-wrap { position: relative; }
+    #map { width: 100%; height: 100%; }
+
+    .floating-panel {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 500;
+      width: min(420px, calc(100% - 36px));
+      background: rgba(8, 14, 28, 0.86);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      pointer-events: none;
+    }
+
+    .floating-panel strong { display: block; margin-bottom: 4px; }
+    .floating-panel span { color: var(--muted); font-size: 0.88rem; }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .leaflet-control-attribution,
+    .leaflet-control-zoom {
+      box-shadow: none !important;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: rgba(15,23,42,0.96);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .popup-title { font-weight: 800; margin-bottom: 6px; }
+    .popup-line { color: #cbd5e1; font-size: 0.9rem; margin: 3px 0; }
+
+    @media (max-width: 960px) {
+      body { overflow: auto; }
+      .app { grid-template-columns: 1fr; height: auto; }
+      .sidebar { height: auto; }
+      .map-wrap { height: 70vh; min-height: 540px; }
+      #map { height: 100%; }
+      .floating-panel { width: calc(100% - 36px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">NZ</div>
+        <div>
+          <h1>NZ FPV Spot Finder</h1>
+          <p class="subtitle">Weather-first spot discovery for New Zealand</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Search spot</h2>
+        <div class="controls">
+          <input id="searchInput" class="input" type="text" placeholder="Search by name or region" />
+          <button id="searchBtn" class="button">Find spot</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Filters</h2>
+        <div class="chips" id="filterChips">
+          <div class="chip active" data-filter="all">All</div>
+          <div class="chip" data-filter="freestyle">Freestyle</div>
+          <div class="chip" data-filter="cinematic">Cinematic</div>
+          <div class="chip" data-filter="longrange">Long range</div>
+          <div class="chip" data-filter="whoop">Whoop</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Current spot</h2>
+        <div id="selectedSpotCard" class="spot-meta">
+          Click a marker to see the weather snapshot, airspace note, and the flyability score.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Spot list</h2>
+        <div id="spotList" class="spot-list"></div>
+      </div>
+    </aside>
+
+    <main class="map-wrap">
+      <div class="floating-panel">
+        <strong>Prototype build</strong>
+        <span>Leaflet map, NZ spot pins, weather placeholders, and airspace placeholders. Replace the mock data with live APIs when you wire up the backend.</span>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:#4ade80"></span> Good</div>
+          <div class="legend-item"><span class="dot" style="background:#f59e0b"></span> Risky</div>
+          <div class="legend-item"><span class="dot" style="background:#ef4444"></span> Restricted</div>
+        </div>
+      </div>
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const spots = [
+      {
+        id: 1,
+        name: "Muriwai Coast",
+        region: "Auckland",
+        lat: -36.817,
+        lon: 174.447,
+        tags: ["freestyle", "cinematic"],
+        wind: 18,
+        gust: 29,
+        rain: 12,
+        airspace: "Open coastal area, check local conditions.",
+        restriction: false,
+        notes: "Strong coastal wind can make this tricky for small quads."
+      },
+      {
+        id: 2,
+        name: "Bethells Beach",
+        region: "Auckland",
+        lat: -36.894,
+        lon: 174.453,
+        tags: ["freestyle", "longrange"],
+        wind: 14,
+        gust: 22,
+        rain: 8,
+        airspace: "Nearby controlled airspace may apply. Check before flying.",
+        restriction: false,
+        notes: "Good line-of-sight, but wind can rise fast."
+      },
+      {
+        id: 3,
+        name: "Rangitoto Foreshore",
+        region: "Auckland",
+        lat: -36.836,
+        lon: 174.793,
+        tags: ["cinematic"],
+        wind: 10,
+        gust: 16,
+        rain: 5,
+        airspace: "Potential restrictions near harbour activity.",
+        restriction: true,
+        notes: "Use caution due to airspace and traffic near the city."
+      },
+      {
+        id: 4,
+        name: "Peka Peka Beach",
+        region: "Kapiti Coast",
+        lat: -40.822,
+        lon: 175.002,
+        tags: ["freestyle", "longrange"],
+        wind: 11,
+        gust: 18,
+        rain: 15,
+        airspace: "Generally open, but check for temporary restrictions.",
+        restriction: false,
+        notes: "Often a cleaner option when inland winds are poor."
+      },
+      {
+        id: 5,
+        name: "Wellington Waterfront",
+        region: "Wellington",
+        lat: -41.286,
+        lon: 174.781,
+        tags: ["cinematic"],
+        wind: 24,
+        gust: 38,
+        rain: 20,
+        airspace: "Dense urban environment. Restrictions likely.",
+        restriction: true,
+        notes: "Not ideal for casual FPV sessions."
+      }
+    ];
+
+    const map = L.map('map', {
+      zoomControl: true,
+      minZoom: 4
+    }).setView([-41.3, 172.5], 5.5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const markerLayer = L.layerGroup().addTo(map);
+    let selectedFilter = 'all';
+    let activeSpotId = null;
+
+    function flyabilityScore(spot) {
+      let score = 100;
+      if (spot.wind > 10) score -= (spot.wind - 10) * 2.5;
+      if (spot.gust > spot.wind + 8) score -= 12;
+      if (spot.rain > 25) score -= 25;
+      if (spot.restriction) score -= 30;
+      if (score < 0) score = 0;
+      if (score > 100) score = 100;
+      return Math.round(score);
+    }
+
+    function scoreLabel(score, restricted) {
+      if (restricted) return { text: 'Restricted', cls: 'bad' };
+      if (score >= 75) return { text: 'Good', cls: 'good' };
+      if (score >= 45) return { text: 'Risky', cls: 'warn' };
+      return { text: 'Poor', cls: 'bad' };
+    }
+
+    function scoreColor(score, restricted) {
+      if (restricted) return '#ef4444';
+      if (score >= 75) return '#4ade80';
+      if (score >= 45) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    function matchesFilter(spot) {
+      if (selectedFilter === 'all') return true;
+      return spot.tags.includes(selectedFilter);
+    }
+
+    function renderSpotList(filteredSpots) {
+      const list = document.getElementById('spotList');
+      list.innerHTML = '';
+
+      filteredSpots.forEach(spot => {
+        const score = flyabilityScore(spot);
+        const label = scoreLabel(score, spot.restriction);
+        const el = document.createElement('div');
+        el.className = 'spot';
+        el.innerHTML = `
+          <div class="spot-title">${spot.name}</div>
+          <div class="spot-meta">${spot.region}<br>Wind ${spot.wind} km/h, gusts ${spot.gust} km/h<br>Rain chance ${spot.rain}%</div>
+          <div class="badge-row">
+            <span class="badge ${label.cls}">${label.text}</span>
+            <span class="badge">Score ${score}/100</span>
+            ${spot.tags.map(tag => `<span class="badge">${tag}</span>`).join('')}
+          </div>
+        `;
+        el.addEventListener('click', () => selectSpot(spot.id, true));
+        list.appendChild(el);
+      });
+
+      if (filteredSpots.length === 0) {
+        list.innerHTML = '<div class="spot-meta">No spots match the selected filter.</div>';
+      }
+    }
+
+    function updateSelectedCard(spot) {
+      const score = flyabilityScore(spot);
+      const label = scoreLabel(score, spot.restriction);
+      const card = document.getElementById('selectedSpotCard');
+      card.innerHTML = `
+        <div style="font-weight:800; font-size:1.05rem; margin-bottom:6px;">${spot.name}</div>
+        <div>Region: ${spot.region}</div>
+        <div>Wind: ${spot.wind} km/h | Gusts: ${spot.gust} km/h | Rain: ${spot.rain}%</div>
+        <div>Airspace: ${spot.airspace}</div>
+        <div style="margin-top:8px;">${spot.notes}</div>
+        <div class="badge-row" style="margin-top:12px;">
+          <span class="badge ${label.cls}">${label.text}</span>
+          <span class="badge">Score ${score}/100</span>
+          ${spot.restriction ? '<span class="badge bad">Restriction flag</span>' : '<span class="badge good">No hard restriction flag</span>'}
+        </div>
+      `;
+    }
+
+    function markerIcon(spot) {
+      const score = flyabilityScore(spot);
+      const color = scoreColor(score, spot.restriction);
+      const size = 14;
+      return L.divIcon({
+        className: '',
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.92);box-shadow:0 0 0 6px rgba(255,255,255,0.12);"></div>`,
+        iconSize: [size + 6, size + 6],
+        iconAnchor: [size / 2 + 3, size / 2 + 3]
+      });
+    }
+
+    function renderMarkers() {
+      markerLayer.clearLayers();
+      spots.filter(matchesFilter).forEach(spot => {
+        const marker = L.marker([spot.lat, spot.lon], { icon: markerIcon(spot) }).addTo(markerLayer);
+        const score = flyabilityScore(spot);
+        marker.bindPopup(`
+          <div class="popup-title">${spot.name}</div>
+          <div class="popup-line">${spot.region}</div>
+          <div class="popup-line">Wind ${spot.wind} km/h, gusts ${spot.gust} km/h</div>
+          <div class="popup-line">Rain ${spot.rain}%</div>
+          <div class="popup-line">Score ${score}/100</div>
+          <div class="popup-line">${spot.restriction ? 'Restriction flag present' : 'No hard restriction flag'}</div>
+        `);
+        marker.on('click', () => selectSpot(spot.id, false));
+      });
+    }
+
+    function selectSpot(id, panToSpot) {
+      activeSpotId = id;
+      const spot = spots.find(s => s.id === id);
+      if (!spot) return;
+      updateSelectedCard(spot);
+      if (panToSpot) map.setView([spot.lat, spot.lon], Math.max(map.getZoom(), 10), { animate: true });
+    }
+
+    function applyFilter(filter) {
+      selectedFilter = filter;
+      document.querySelectorAll('.chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.filter === filter);
+      });
+      const filtered = spots.filter(matchesFilter);
+      renderMarkers();
+      renderSpotList(filtered);
+      if (activeSpotId) {
+        const selectedStillVisible = filtered.some(s => s.id === activeSpotId);
+        if (!selectedStillVisible) activeSpotId = null;
+      }
+      if (!activeSpotId && filtered.length > 0) selectSpot(filtered[0].id, false);
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      const value = document.getElementById('searchInput').value.trim().toLowerCase();
+      const match = spots.find(spot => {
+        return spot.name.toLowerCase().includes(value) || spot.region.toLowerCase().includes(value);
+      });
+      if (match) {
+        selectSpot(match.id, true);
+      }
+    });
+
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('searchBtn').click();
+    });
+
+    document.getElementById('filterChips').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      applyFilter(chip.dataset.filter);
+    });
+
+    applyFilter('all');
+    selectSpot(1, false);
+  </script>
+</body>
+</html>
