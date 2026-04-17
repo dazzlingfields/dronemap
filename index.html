@@ -472,18 +472,33 @@
     }
 
     function flyabilityScore(spot) {
-      let score = 100;
-      const wind = spot.wind == null ? 18 : spot.wind;
-      const gust = spot.gust == null ? wind + 7 : spot.gust;
-      const rain = spot.rain == null ? 12 : spot.rain;
-      if (wind > 10) score -= (wind - 10) * 2.5;
-      if (gust > wind + 8) score -= 12;
-      if (rain > 25) score -= 25;
-      if (spot.restriction) score -= 30;
-      if (score < 0) score = 0;
-      if (score > 100) score = 100;
-      return Math.round(score);
-    }
+  let score = 100;
+
+  const wind = spot.wind == null ? 18 : spot.wind;
+  const gust = spot.gust == null ? wind + 7 : spot.gust;
+  const rain = spot.rain == null ? 12 : spot.rain;
+
+  if (wind > 10) score -= (wind - 10) * 2.5;
+  if (gust > wind + 8) score -= 12;
+  if (rain > 25) score -= 25;
+
+  if (spot.restriction) score -= 30;
+
+  const airspace = checkAirspaceConflict(spot);
+
+  if (airspace === "CTR") {
+    return 0;
+  }
+
+  if (airspace === "MIL") {
+    score -= 40;
+  }
+
+  if (score < 0) score = 0;
+  if (score > 100) score = 100;
+
+  return Math.round(score);
+}
 
     function scoreLabel(score, restricted) {
       if (restricted) return { text: 'Restricted', cls: 'bad' };
