@@ -270,6 +270,12 @@
       margin-top: 8px;
     }
 
+    .loading {
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 6px 0 0;
+    }
+
     @media (max-width: 960px) {
       body { overflow: auto; }
       .app { grid-template-columns: 1fr; height: auto; }
@@ -323,20 +329,20 @@
           </div>
           <div class="stat">
             <div class="label">Weather</div>
-            <div class="value">Mock</div>
+            <div class="value" id="weatherStatus">Loading</div>
           </div>
           <div class="stat">
             <div class="label">Airspace</div>
-            <div class="value">Mock</div>
+            <div class="value" id="airspaceStatus">Mock</div>
           </div>
         </div>
-        <p class="small-note">Next step is swapping the mock layers for real JSON files and API responses. GitHub Pages can host the static files without a backend.</p>
+        <p class="small-note">Weather is now live through Open-Meteo, directly from the browser. No API key is needed for this build.</p>
       </div>
 
       <div class="card">
         <h2>Current spot</h2>
         <div id="selectedSpotCard" class="spot-meta">
-          Click a marker to see the weather snapshot, airspace note, and flyability score.
+          Click a marker to see the live weather snapshot, airspace note, and flyability score.
         </div>
       </div>
 
@@ -349,7 +355,7 @@
     <main class="map-wrap">
       <div class="floating-panel">
         <strong>Prototype build</strong>
-        <span>Leaflet map, NZ spot pins, weather placeholders, and airspace placeholders. Replace the mock data with live APIs when you wire up the backend.</span>
+        <span>Leaflet map, NZ spot pins, live Open-Meteo values, and airspace placeholders. Replace the mock zone file with real NZ restriction data when ready.</span>
         <div class="legend">
           <div class="legend-item"><span class="dot" style="background:#4ade80"></span> Good</div>
           <div class="legend-item"><span class="dot" style="background:#f59e0b"></span> Risky</div>
@@ -370,9 +376,6 @@
         lat: -36.817,
         lon: 174.447,
         tags: ["freestyle", "cinematic"],
-        wind: 18,
-        gust: 29,
-        rain: 12,
         airspace: "Open coastal area, check local conditions.",
         restriction: false,
         notes: "Strong coastal wind can make this tricky for small quads."
@@ -384,9 +387,6 @@
         lat: -36.894,
         lon: 174.453,
         tags: ["freestyle", "longrange"],
-        wind: 14,
-        gust: 22,
-        rain: 8,
         airspace: "Nearby controlled airspace may apply. Check before flying.",
         restriction: false,
         notes: "Good line-of-sight, but wind can rise fast."
@@ -398,9 +398,6 @@
         lat: -36.836,
         lon: 174.793,
         tags: ["cinematic"],
-        wind: 10,
-        gust: 16,
-        rain: 5,
         airspace: "Potential restrictions near harbour activity.",
         restriction: true,
         notes: "Use caution due to airspace and traffic near the city."
@@ -412,9 +409,6 @@
         lat: -40.822,
         lon: 175.002,
         tags: ["freestyle", "longrange"],
-        wind: 11,
-        gust: 18,
-        rain: 15,
         airspace: "Generally open, but check for temporary restrictions.",
         restriction: false,
         notes: "Often a cleaner option when inland winds are poor."
@@ -426,9 +420,6 @@
         lat: -41.286,
         lon: 174.781,
         tags: ["cinematic"],
-        wind: 24,
-        gust: 38,
-        rain: 20,
         airspace: "Dense urban environment. Restrictions likely.",
         restriction: true,
         notes: "Not ideal for casual FPV sessions."
@@ -439,11 +430,15 @@
     const selectedSpotCard = document.getElementById('selectedSpotCard');
     const spotCountElement = document.getElementById('spotCount');
     const restrictedCountElement = document.getElementById('restrictedCount');
+    const weatherStatusElement = document.getElementById('weatherStatus');
+    const airspaceStatusElement = document.getElementById('airspaceStatus');
 
     let spots = [];
     let restrictedZones = [];
     let selectedFilter = 'all';
     let activeSpotId = null;
+    const weatherCache = {};
+    const weatherPending = {};
 
     const map = L.map('map', {
       zoomControl: true,
@@ -464,11 +459,26 @@
       }
     }).addTo(map);
 
+    function round1(value) {
+      return Math.round(value * 10) / 10;
+    }
+
+    function windLabel(speed) {
+      if (speed == null) return 'No data';
+      if (speed < 10) return 'Calm';
+      if (speed < 20) return 'Moderate';
+      if (speed < 30) return 'Windy';
+      return 'Very windy';
+    }
+
     function flyabilityScore(spot) {
       let score = 100;
-      if (spot.wind > 10) score -= (spot.wind - 10) * 2.5;
-      if (spot.gust > spot.wind + 8) score -= 12;
-      if (spot.rain > 25) score -= 25;
+      const wind = spot.wind == null ? 18 : spot.wind;
+      const gust = spot.gust == null ? wind + 7 : spot.gust;
+      const rain = spot.rain == null ? 12 : spot.rain;
+      if (wind > 10) score -= (wind - 10) * 2.5;
+      if (gust > wind + 8) score -= 12;
+      if (rain > 25) score -= 25;
       if (spot.restriction) score -= 30;
       if (score < 0) score = 0;
       if (score > 100) score = 100;
@@ -494,6 +504,44 @@
       return spot.tags.includes(selectedFilter);
     }
 
+    function formatHourLabel(isoString) {
+      const date = new Date(isoString);
+      const hour = date.getHours();
+      return String(hour).padStart(2, '0') + ':00';
+    }
+
+    function renderWeatherPreview(spot) {
+      const data = weatherCache[spot.id];
+      if (!data) return '<div class="loading">Loading live weather...</div>';
+
+      const current = data.current;
+      const hourly = data.hourly || [];
+      const nextHours = hourly.slice(0, 3).map(item => {
+        return `${formatHourLabel(item.time)} ${Math.round(item.windspeed)} km/h`;
+      }).join(' | ');
+
+      return `
+        <div>Live wind: ${Math.round(current.windspeed)} km/h</div>
+        <div>Gusts: ${Math.round(current.gusts ?? current.windspeed)} km/h</div>
+        <div>Direction: ${Math.round(current.winddirection)}°</div>
+        <div>Rain: ${current.precipitation ?? 0} mm</div>
+        <div style="margin-top:6px;">Next hours: ${nextHours || 'No hourly data yet'}</div>
+      `;
+    }
+
+    function updateSpotValues(spot, liveWeather) {
+      if (liveWeather) {
+        spot.wind = Math.round(liveWeather.current.windspeed);
+        spot.gust = Math.round(liveWeather.current.gusts ?? liveWeather.current.windspeed);
+        spot.rain = Math.round(liveWeather.current.precipitation ?? 0);
+        spot.windDirection = Math.round(liveWeather.current.winddirection);
+        spot.temperature = Math.round(liveWeather.current.temperature);
+      }
+      if (spot.wind == null) spot.wind = 18;
+      if (spot.gust == null) spot.gust = spot.wind + 8;
+      if (spot.rain == null) spot.rain = 12;
+    }
+
     function renderSpotList(filteredSpots) {
       spotListElement.innerHTML = '';
 
@@ -504,7 +552,7 @@
         el.className = 'spot';
         el.innerHTML = `
           <div class="spot-title">${spot.name}</div>
-          <div class="spot-meta">${spot.region}<br>Wind ${spot.wind} km/h, gusts ${spot.gust} km/h<br>Rain chance ${spot.rain}%</div>
+          <div class="spot-meta">${spot.region}<br>${renderSpotMetaText(spot)}</div>
           <div class="badge-row">
             <span class="badge ${label.cls}">${label.text}</span>
             <span class="badge">Score ${score}/100</span>
@@ -520,13 +568,21 @@
       }
     }
 
+    function renderSpotMetaText(spot) {
+      const wind = spot.wind == null ? 'Loading' : `${spot.wind} km/h`;
+      const gust = spot.gust == null ? 'Loading' : `${spot.gust} km/h`;
+      const rain = spot.rain == null ? 'Loading' : `${spot.rain}%`;
+      return `Wind ${wind}, gusts ${gust}<br>Rain chance ${rain}`;
+    }
+
     function updateSelectedCard(spot) {
       const score = flyabilityScore(spot);
       const label = scoreLabel(score, spot.restriction);
+      const weatherBlock = renderWeatherPreview(spot);
       selectedSpotCard.innerHTML = `
         <div style="font-weight:800; font-size:1.05rem; margin-bottom:6px;">${spot.name}</div>
         <div>Region: ${spot.region}</div>
-        <div>Wind: ${spot.wind} km/h | Gusts: ${spot.gust} km/h | Rain: ${spot.rain}%</div>
+        <div>Weather: ${weatherBlock}</div>
         <div>Airspace: ${spot.airspace}</div>
         <div style="margin-top:8px;">${spot.notes}</div>
         <div class="badge-row" style="margin-top:12px;">
@@ -557,8 +613,8 @@
         marker.bindPopup(`
           <div class="popup-title">${spot.name}</div>
           <div class="popup-line">${spot.region}</div>
-          <div class="popup-line">Wind ${spot.wind} km/h, gusts ${spot.gust} km/h</div>
-          <div class="popup-line">Rain ${spot.rain}%</div>
+          <div class="popup-line">Wind ${spot.wind == null ? 'loading' : Math.round(spot.wind)} km/h, gusts ${spot.gust == null ? 'loading' : Math.round(spot.gust)} km/h</div>
+          <div class="popup-line">Rain ${spot.rain == null ? 'loading' : Math.round(spot.rain)}%</div>
           <div class="popup-line">Score ${score}/100</div>
           <div class="popup-line">${spot.restriction ? 'Restriction flag present' : 'No hard restriction flag'}</div>
         `);
@@ -614,6 +670,7 @@
       } catch (error) {
         spots = fallbackSpots;
       }
+      spots.forEach(function (spot) { updateSpotValues(spot, null); });
     }
 
     async function loadRestrictedZones() {
@@ -626,6 +683,69 @@
       } catch (error) {
         restrictedZones = [];
       }
+    }
+
+    async function fetchWeatherForSpot(spot) {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(spot.lat) + '&longitude=' + encodeURIComponent(spot.lon) + '&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&hourly=wind_speed_10m,wind_direction_10m,precipitation_probability&timezone=auto';
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Open-Meteo request failed');
+      }
+      return await response.json();
+    }
+
+    async function loadWeatherForAllSpots() {
+      weatherStatusElement.textContent = 'Loading';
+      const tasks = spots.map(async function (spot) {
+        if (weatherPending[spot.id]) return;
+        weatherPending[spot.id] = true;
+        try {
+          const data = await fetchWeatherForSpot(spot);
+          weatherCache[spot.id] = {
+            current: {
+              temperature: data.current.temperature_2m,
+              windspeed: data.current.wind_speed_10m,
+              winddirection: data.current.wind_direction_10m,
+              gusts: data.current.wind_gusts_10m,
+              precipitation: data.current.precipitation
+            },
+            hourly: buildHourlyPreview(data)
+          };
+          updateSpotValues(spot, weatherCache[spot.id]);
+        } catch (error) {
+          weatherCache[spot.id] = null;
+        } finally {
+          weatherPending[spot.id] = false;
+        }
+      });
+      await Promise.all(tasks);
+      weatherStatusElement.textContent = 'Live';
+    }
+
+    function buildHourlyPreview(data) {
+      if (!data || !data.hourly || !data.hourly.time) return [];
+      const preview = [];
+      const times = data.hourly.time;
+      const wind = data.hourly.wind_speed_10m || [];
+      const direction = data.hourly.wind_direction_10m || [];
+      const rain = data.hourly.precipitation_probability || [];
+      const now = new Date();
+      let start = 0;
+      for (let i = 0; i < times.length; i++) {
+        if (new Date(times[i]) >= now) {
+          start = i;
+          break;
+        }
+      }
+      for (let i = start; i < Math.min(start + 3, times.length); i++) {
+        preview.push({
+          time: times[i],
+          windspeed: wind[i],
+          winddirection: direction[i],
+          rain: rain[i]
+        });
+      }
+      return preview;
     }
 
     document.getElementById('searchBtn').addEventListener('click', () => {
@@ -655,6 +775,11 @@
       renderRestrictionLayer();
       applyFilter('all');
       if (spots.length > 0) selectSpot(spots[0].id, false);
+      await loadWeatherForAllSpots();
+      updateCounters();
+      renderMarkers();
+      renderSpotList(spots.filter(matchesFilter));
+      if (activeSpotId) selectSpot(activeSpotId, false);
     }
 
     init();
