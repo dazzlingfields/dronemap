@@ -42,7 +42,52 @@
 
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">// ---------------- TERRAIN FUNCTIONS ----------------
+
+async function getElevation(lat, lon) {
+  try {
+    const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.results[0].elevation;
+  } catch (err) {
+    console.error('Elevation fetch failed', err);
+    return 0;
+  }
+}
+
+async function terrainScore(lat, lon) {
+  try {
+    const center = await getElevation(lat, lon);
+
+    const offsets = [
+      [0.01,0], [-0.01,0],
+      [0,0.01], [0,-0.01],
+      [0.01,0.01], [-0.01,-0.01],
+      [0.01,-0.01], [-0.01,0.01]
+    ];
+
+    let variation = 0;
+
+    for (let i = 0; i < offsets.length; i++) {
+      const o = offsets[i];
+      const e = await getElevation(lat + o[0], lon + o[1]);
+      variation += Math.abs(e - center);
+    }
+
+    const avg = variation / offsets.length;
+
+    if (avg < 10) return 100;
+    if (avg < 30) return 70;
+    if (avg < 60) return 40;
+    return 20;
+  } catch (err) {
+    console.error('Terrain score failed', err);
+    return 50;
+  }
+}
+
+</script>
 <script>
 
 const map = L.map('map').setView([-41.2, 174.8], 6);
