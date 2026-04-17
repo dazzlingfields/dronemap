@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NZ FPV Site Intel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+
+:root {
+  --bg: #060a10;
+  --panel: #0b1420;
+  --panel2: #0f1d2e;
+  --border: #1c3048;
+  --accent: #00e676;
+  --accent2: #00c8ff;
+  --warn: #ffab00;
+  --danger: #ff3d00;
+  --blocked: #d500f9;
+  --txt: #cce4f4;
+  --txt2: #6890a8;
+  --mono: 'Share Tech Mono', monospace;
+  --head: 'Rajdhani', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: 100vh;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--head);
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ──────────────────────────────── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0b1420 0%, #0c1f32 100%);
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 38px; height: 38px;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  font-size: 17px;
+  box-shadow: 0 0 14px #00e67630;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.logo-icon::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #00e67640;
+  border-radius: 3px;
+}
+
+.header-txt .title {
+  font-family: var(--head);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 2.5px;
+  color: var(--txt);
+  line-height: 1;
+}
+
+.header-txt .sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt2);
+  letter-spacing: 1.5px;
+  margin-top: 3px;
+}
+
+/* ── TABS ─────────────────────────────────── */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  padding: 10px 6px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--txt2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab-btn:last-child { border-right: none; }
+.tab-btn:hover { background: var(--panel2); color: var(--txt); }
+
+.tab-btn.active {
+  background: var(--panel2);
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* ── TAB CONTENT ─────────────────────────── */
+.tab-content {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab-content.active { display: flex; }
+
+.tab-content::-webkit-scrollbar { width: 3px; }
+.tab-content::-webkit-scrollbar-track { background: transparent; }
+.tab-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── FORM ELEMENTS ───────────────────────── */
+.hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent2);
+  padding: 8px 10px;
+  background: #00c8ff0a;
+  border: 1px solid #00c8ff1a;
+  border-radius: 6px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt2);
+  letter-spacing: 1.5px;
+}
+
+input, select, textarea {
+  background: #060c16;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--txt);
+  font-family: var(--head);
+  font-size: 14px;
+  padding: 8px 10px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent2);
+}
+
+input::placeholder, textarea::placeholder { color: #2e4860; }
+select { cursor: pointer; }
+select option { background: #0b1420; }
+textarea { resize: vertical; min-height: 68px; }
+
+.btn-add {
+  padding: 11px;
+  background: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+  color: #001a0a;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--head);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 16px #00e67628;
+  margin-top: 2px;
+}
+
+.btn-add:hover {
+  box-shadow: 0 0 28px #00e67660;
+  transform: translateY(-1px);
+}
+
+.btn-add:active { transform: none; }
+
+/* ── INTEL PANEL ─────────────────────────── */
+.no-select {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--txt2);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 2;
+}
+
+.loading-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 50px 20px;
+  color: var(--txt2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.spinner {
+  width: 30px; height: 30px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.intel-name {
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--txt);
+  line-height: 1.2;
+}
+
+.intel-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt2);
+  margin-top: 4px;
+  line-height: 1.7;
+}
+
+.score-ring {
+  flex-shrink: 0;
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid;
+  transition: all 0.3s;
+}
+
+.score-ring .snum {
+  font-family: var(--mono);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-ring .slbl {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+}
+
+.section-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: var(--txt2);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+}
+
+.sub-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sub-card {
+  background: #06101a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.sub-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt2);
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+
+.sub-val {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sub-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.sub-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+.wx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.wx-item {
+  background: #06101a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.wx-lbl { font-family: var(--mono); font-size: 9px; color: var(--txt2); letter-spacing: 1px; }
+
+.wx-val {
+  font-family: var(--mono);
+  font-size: 17px;
+  color: var(--accent2);
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.wx-unit { font-size: 10px; color: var(--txt2); }
+
+.info-box {
+  background: #06101a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--txt2);
+  line-height: 1.6;
+}
+
+.air-banner {
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+.air-banner.clear  { background: #00e6760a; border: 1px solid #00e67630; color: var(--accent); }
+.air-banner.buffer { background: #ffab000a; border: 1px solid #ffab0040; color: var(--warn); }
+.air-banner.blocked{ background: #d500f90a; border: 1px solid #d500f940; color: var(--blocked); }
+
+.tags-row { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.tag {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt2);
+}
+
+.btn-del {
+  background: transparent;
+  border: 1px solid #ff3d0035;
+  color: #ff6040;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.btn-del:hover { background: #ff3d0012; border-color: var(--danger); color: var(--danger); }
+
+/* ── SPOTS LIST ───────────────────────────── */
+.spot-item {
+  background: #06101a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.spot-item:hover { border-color: #2a5878; background: #0a1a28; }
+.spot-item.sel { border-color: var(--accent); background: #00e6760a; }
+
+.spot-item-name { font-weight: 600; font-size: 14px; color: var(--txt); }
+
+.spot-item-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt2);
+  margin-top: 2px;
+}
+
+.spot-mini-score {
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 700;
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+}
+
+.empty-list {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--txt2);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 2;
+}
+
+.btn-clear {
+  padding: 10px;
+  background: transparent;
+  border: 1px solid #ff3d0025;
+  border-radius: 8px;
+  color: #ff6040;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.btn-clear:hover { background: #ff3d000f; border-color: var(--danger); }
+
+/* ── MAP ──────────────────────────────────── */
+#map { height: 100%; }
+
+/* Leaflet dark overrides */
+.leaflet-popup-content-wrapper {
+  background: var(--panel);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 30px #00000090;
+}
+
+.leaflet-popup-tip { background: var(--panel); }
+.leaflet-popup-content { font-family: var(--head); font-size: 13px; }
+
+.leaflet-control-zoom a {
+  background: var(--panel) !important;
+  color: var(--txt) !important;
+  border-color: var(--border) !important;
+}
+
+.leaflet-control-zoom a:hover { background: var(--panel2) !important; color: var(--accent) !important; }
+
+/* Preview marker pulse */
+@keyframes mpulse {
+  0%,100% { box-shadow: 0 0 8px #00c8ff80; }
+  50%      { box-shadow: 0 0 18px #00c8ffcc; }
+}
+
+.pv-marker {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent2);
+  border: 2px solid #fff;
+  animation: mpulse 1.4s infinite;
+}
+
+/* ── RESPONSIVE ───────────────────────────── */
+@media (max-width: 640px) {
+  body { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; }
+  #map { order: -1; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-icon">◈</div>
+    <div class="header-txt">
+      <div class="title">NZ FPV SITE INTEL</div>
+      <div class="sub">MISSION PLANNING SYSTEM v2.1</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="add">+ ADD</button>
+    <button class="tab-btn" data-tab="intel">INTEL</button>
+    <button class="tab-btn" data-tab="spots">SPOTS</button>
+  </div>
+
+  <!-- ── ADD TAB ── -->
+  <div class="tab-content active" id="tab-add">
+
+    <div class="hint" id="hint-box">◎ Click anywhere on the map to drop a marker, then enter details below</div>
+
+    <div class="form-group">
+      <label>DESIGNATION</label>
+      <input id="f-name" placeholder="e.g. Wairarapa Flats North" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>LATITUDE</label>
+        <input id="f-lat" placeholder="-41.2865" />
+      </div>
+      <div class="form-group">
+        <label>LONGITUDE</label>
+        <input id="f-lon" placeholder="174.7762" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>OPEN AREA ESTIMATE</label>
+      <select id="f-area">
+        <option value="micro">Micro — under 0.5 ha (backyard/car park)</option>
+        <option value="small">Small — 0.5 to 2 ha (sports field)</option>
+        <option value="medium" selected>Medium — 2 to 10 ha (small farm paddock)</option>
+        <option value="large">Large — 10+ ha (open farmland / coast)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>TAGS (comma separated)</label>
+      <input id="f-tags" placeholder="coastal, farmland, urban, hills, trees..." />
+    </div>
+
+    <div class="form-group">
+      <label>NOTES</label>
+      <textarea id="f-notes" rows="3" placeholder="Access, hazards, power lines, local rules, parking..."></textarea>
+    </div>
+
+    <button class="btn-add" id="btn-add">⊕ ADD SPOT TO MAP</button>
+
+  </div>
+
+  <!-- ── INTEL TAB ── -->
+  <div class="tab-content" id="tab-intel">
+    <div id="intel-panel">
+      <div class="no-select">⊙ Select a marker on the map<br>to view site intelligence</div>
+    </div>
+  </div>
+
+  <!-- ── SPOTS TAB ── -->
+  <div class="tab-content" id="tab-spots">
+    <div id="spots-list"></div>
+    <button class="btn-clear" id="btn-clear">⊘ CLEAR ALL SPOTS</button>
+  </div>
+
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  DATA STORE
+// ═══════════════════════════════════════════════════════
+
+let spots = JSON.parse(localStorage.getItem('nz-fpv-spots') || '[]');
+let selectedId = null;
+let previewMarker = null;
+const markerMap = {};
+
+function save() { localStorage.setItem('nz-fpv-spots', JSON.stringify(spots)); }
+
+// ═══════════════════════════════════════════════════════
+//  NZ AIRSPACE — CTR ZONES (approximate centroids & radii)
+//  ⚠ Reference only. Always verify with AIP New Zealand / airshare.co.nz
+// ═══════════════════════════════════════════════════════
+
+const CTR_ZONES = [
+  { name:'Auckland CTR (NZAA)',         lat:-37.0082, lon:174.7917, r:9300  },
+  { name:'Wellington CTR (NZWN)',        lat:-41.3272, lon:174.8050, r:5500  },
+  { name:'Christchurch CTR (NZCH)',      lat:-43.4894, lon:172.5322, r:6500  },
+  { name:'Queenstown CTR (NZQN)',        lat:-45.0211, lon:168.7389, r:5500  },
+  { name:'Hamilton CTR (NZHN)',          lat:-37.8664, lon:175.3321, r:4500  },
+  { name:'Tauranga CTR (NZTG)',          lat:-37.6716, lon:176.1960, r:4500  },
+  { name:'Dunedin CTR (NZDN)',           lat:-45.9281, lon:170.1983, r:4500  },
+  { name:'Palmerston North CTR (NZPM)',  lat:-40.3206, lon:175.6168, r:4000  },
+  { name:'Napier / Hastings CTR (NZNR)',lat:-39.4658, lon:176.8700, r:4000  },
+  { name:'Nelson CTR (NZNS)',            lat:-41.2983, lon:173.2211, r:4000  },
+  { name:'Rotorua CTR (NZRO)',           lat:-38.1092, lon:176.3172, r:4000  },
+  { name:'Invercargill CTR (NZNV)',      lat:-46.4124, lon:168.3131, r:4000  },
+  { name:'New Plymouth CTR (NZNP)',      lat:-39.0086, lon:174.1792, r:4000  },
+  { name:'Whangarei CTR (NZWR)',         lat:-35.7683, lon:174.3653, r:3500  },
+];
+
+// Major urban centres — used for RF interference scoring
+const URBAN_CENTRES = [
+  { lat:-36.8485, lon:174.7633 }, // Auckland
+  { lat:-41.2865, lon:174.7762 }, // Wellington
+  { lat:-43.5321, lon:172.6362 }, // Christchurch
+  { lat:-37.7870, lon:175.2793 }, // Hamilton
+  { lat:-37.6878, lon:176.1651 }, // Tauranga
+  { lat:-45.8788, lon:170.5028 }, // Dunedin
+  { lat:-40.3568, lon:175.6110 }, // Palmerston North
+  { lat:-38.1368, lon:176.2497 }, // Rotorua
+  { lat:-39.0556, lon:174.0752 }, // New Plymouth
+  { lat:-41.2706, lon:173.2840 }, // Nelson
+  { lat:-35.7251, lon:174.3236 }, // Whangarei
+];
+
+// ═══════════════════════════════════════════════════════
+//  MAP INITIALISATION
+// ═══════════════════════════════════════════════════════
+
+const map = L.map('map', { zoomControl: false }).setView([-41.0, 174.8], 6);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// Dark tile layer
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap contributors © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// Draw CTR zones on map
+CTR_ZONES.forEach(z => {
+  // Inner CTR boundary
+  L.circle([z.lat, z.lon], {
+    radius: z.r,
+    color: '#d500f9', weight: 1.5, opacity: 0.7,
+    fillColor: '#d500f9', fillOpacity: 0.06,
+    dashArray: '5 5'
+  }).addTo(map)
+    .bindPopup(`<b style="color:#d500f9">${z.name}</b><br><span style="font-size:11px;color:#ff8fb4">⛔ Controlled Airspace<br>CAA authorisation required<br>Verify at airshare.co.nz</span>`);
+
+  // 2 km buffer ring
+  L.circle([z.lat, z.lon], {
+    radius: z.r + 2000,
+    color: '#ffab00', weight: 1, opacity: 0.35,
+    fill: false, dashArray: '2 8'
+  }).addTo(map);
+});
+
+// Score-colour map legend
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = () => {
+  const d = L.DomUtil.create('div');
+  d.style.cssText = `
+    background:#0b1420dd;border:1px solid #1c3048;border-radius:8px;
+    padding:9px 13px;font-family:'Share Tech Mono',monospace;font-size:10px;
+    color:#6890a8;backdrop-filter:blur(6px);line-height:1.9;
+  `;
+  d.innerHTML = `
+    <div style="color:#cce4f4;letter-spacing:1.5px;margin-bottom:4px;font-size:9px">SCORE KEY</div>
+    <div style="color:#00e676">▪ 80–100 &nbsp;OPTIMAL</div>
+    <div style="color:#76ff03">▪ 60–79 &nbsp;&nbsp;GOOD</div>
+    <div style="color:#ffab00">▪ 40–59 &nbsp;&nbsp;MARGINAL</div>
+    <div style="color:#ff6d00">▪ 01–39 &nbsp;&nbsp;POOR</div>
+    <div style="color:#d500f9;margin-top:3px">◉ CTR ZONE</div>
+    <div style="color:#ffab00;opacity:0.8">◉ 2 KM BUFFER</div>
+  `;
+  return d;
+};
+legend.addTo(map);
+
+// ═══════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function scoreColor(s) {
+  if (s === null || s === undefined) return '#6890a8';
+  if (s >= 80) return '#00e676';
+  if (s >= 60) return '#76ff03';
+  if (s >= 40) return '#ffab00';
+  if (s > 0)  return '#ff6d00';
+  return '#d500f9';
+}
+
+function windDir(deg) {
+  if (deg === null || deg === undefined) return '—';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function wmoDesc(code) {
+  if (code === 0)        return 'Clear sky ☀';
+  if (code <= 3)         return 'Partly cloudy ⛅';
+  if (code <= 9)         return 'Overcast ☁';
+  if (code <= 49)        return 'Fog / haze 🌫';
+  if (code <= 59)        return 'Drizzle 🌦';
+  if (code <= 69)        return 'Rain 🌧';
+  if (code <= 79)        return 'Snow / sleet ❄';
+  if (code <= 84)        return 'Rain showers 🌦';
+  if (code <= 99)        return 'Thunderstorm ⛈';
+  return 'Unknown';
+}
+
+// ═══════════════════════════════════════════════════════
+//  INTELLIGENCE ENGINE
+// ═══════════════════════════════════════════════════════
+
+// -- Weather: Open-Meteo (free, no API key) --
+async function fetchWeather(lat, lon) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,cloud_cover,weather_code` +
+      `&wind_speed_unit=kmh&timezone=Pacific%2FAuckland`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.current || null;
+  } catch { return null; }
+}
+
+// -- Terrain: batch elevation via Open-Meteo --
+async function fetchTerrain(lat, lon) {
+  try {
+    const offsets = [[0,0],[0.01,0],[-0.01,0],[0,0.01],[0,-0.01]];
+    const lats = offsets.map(o => (lat + o[0]).toFixed(5)).join(',');
+    const lons = offsets.map(o => (lon + o[1]).toFixed(5)).join(',');
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const elevs = d.elevation;
+    const centre = elevs[0];
+    const variance = elevs.slice(1).reduce((s, e) => s + Math.abs(e - centre), 0) / 4;
+    let score;
+    if      (variance < 8)   score = 95;
+    else if (variance < 20)  score = 78;
+    else if (variance < 45)  score = 55;
+    else if (variance < 90)  score = 30;
+    else                      score = 10;
+    return { score, elevation: Math.round(centre), variance: Math.round(variance) };
+  } catch { return { score: 50, elevation: 0, variance: 0 }; }
+}
+
+// -- Airspace check --
+function checkAirspace(lat, lon) {
+  for (const z of CTR_ZONES) {
+    const d = haversine(lat, lon, z.lat, z.lon);
+    if (d <= z.r)            return { status: 'blocked', zone: z.name, dist: d };
+    if (d <= z.r + 2000)     return { status: 'buffer',  zone: z.name, dist: d };
+  }
+  return { status: 'clear', zone: null, dist: null };
+}
+
+// -- RF interference score --
+function rfScore(lat, lon, tags) {
+  let score = 100;
+  const minUrban = URBAN_CENTRES.reduce((min, u) => Math.min(min, haversine(lat, lon, u.lat, u.lon)), Infinity);
+  if      (minUrban < 3000)  score -= 45;
+  else if (minUrban < 8000)  score -= 28;
+  else if (minUrban < 15000) score -= 12;
+  const t = (tags || []).map(x => x.toLowerCase());
+  if (t.some(x => ['urban','industrial','cbd'].includes(x))) score -= 20;
+  return Math.max(0, score);
+}
+
+// -- Open area score --
+function areaScore(area) {
+  return { micro: 12, small: 42, medium: 72, large: 100 }[area] ?? 60;
+}
+
+// -- Weather score --
+function wxScore(wx) {
+  if (!wx) return 50;
+  const wind = wx.wind_speed_10m  ?? 0;
+  const gust = wx.wind_gusts_10m  ?? 0;
+  const rain = wx.precipitation   ?? 0;
+  const ws = wind <= 10 ? 100 : wind <= 20 ? 85 : wind <= 30 ? 60 : wind <= 40 ? 30 : 0;
+  const gs = gust <= 15 ? 100 : gust <= 25 ? 80 : gust <= 35 ? 50 : gust <= 50 ? 20 : 0;
+  const ps = rain === 0 ? 100 : rain <= 0.2 ? 70 : rain <= 1 ? 30 : 0;
+  return Math.round(ws * 0.40 + gs * 0.35 + ps * 0.25);
+}
+
+// -- Composite score --
+function compositeScore(wScore, terrain, rf, area, airspace) {
+  if (airspace.status === 'blocked') return 0;
+  let s = wScore * 0.30 + terrain.score * 0.20 + rf * 0.15 + area * 0.25 +
+          (airspace.status === 'clear' ? 100 : 35) * 0.10;
+  if (airspace.status === 'buffer') s *= 0.88;
+  return Math.min(100, Math.max(0, Math.round(s)));
+}
+
+async function evaluateSpot(spot) {
+  const [wx, terrain] = await Promise.all([
+    fetchWeather(spot.lat, spot.lon),
+    fetchTerrain(spot.lat, spot.lon)
+  ]);
+  const airspace = checkAirspace(spot.lat, spot.lon);
+  const rf       = rfScore(spot.lat, spot.lon, spot.tags);
+  const area     = areaScore(spot.area);
+  const wScore   = wxScore(wx);
+  const score    = compositeScore(wScore, terrain, rf, area, airspace);
+  return { score, wx, terrain, airspace, rf, area, wScore };
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARKER RENDERING
+// ═══════════════════════════════════════════════════════
+
+function makeIcon(score, selected = false) {
+  const c = scoreColor(score);
+  const label = score !== null && score !== undefined ? score : '?';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:38px;height:38px;border-radius:50%;
+      background:${c}${selected ? '28' : '14'};
+      border:2px solid ${c};
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Share Tech Mono',monospace;font-size:11px;color:${c};
+      box-shadow:0 0 ${selected ? 18 : 7}px ${c}${selected ? '90' : '50'};
+      transition:all 0.2s;
+    ">${label}</div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19]
+  });
+}
+
+function renderMarkers() {
+  Object.values(markerMap).forEach(m => map.removeLayer(m));
+  Object.keys(markerMap).forEach(k => delete markerMap[k]);
+
+  spots.forEach(spot => {
+    const m = L.marker([spot.lat, spot.lon], {
+      icon: makeIcon(spot.cachedScore ?? null, spot.id === selectedId)
+    }).addTo(map);
+    m.on('click', () => selectSpot(spot.id));
+    markerMap[spot.id] = m;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  SPOTS LIST
+// ═══════════════════════════════════════════════════════
+
+function renderSpotsList() {
+  const el = document.getElementById('spots-list');
+  if (spots.length === 0) {
+    el.innerHTML = '<div class="empty-list">NO SPOTS LOGGED<br><br>Click on the map to add<br>your first FPV site</div>';
+    return;
+  }
+  el.innerHTML = spots.map(s => {
+    const col = scoreColor(s.cachedScore);
+    const scoreStr = s.cachedScore !== undefined && s.cachedScore !== null ? s.cachedScore : '—';
+    return `<div class="spot-item ${s.id === selectedId ? 'sel' : ''}" data-id="${s.id}">
+      <div>
+        <div class="spot-item-name">${esc(s.name)}</div>
+        <div class="spot-item-sub">${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}
+          ${s.area ? ' · ' + s.area.toUpperCase() : ''}</div>
+      </div>
+      <div class="spot-mini-score" style="color:${col}">${scoreStr}</div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.spot-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = +el.dataset.id;
+      const spot = spots.find(s => s.id === id);
+      if (spot) map.setView([spot.lat, spot.lon], 13);
+      selectSpot(id);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  INTEL PANEL
+// ═══════════════════════════════════════════════════════
+
+function renderIntelLoading() {
+  document.getElementById('intel-panel').innerHTML =
+    `<div class="loading-panel"><div class="spinner"></div><div>ACQUIRING DATA...</div></div>`;
+}
+
+function renderIntel(spot, intel) {
+  const { score, wx, terrain, airspace, rf, area, wScore } = intel;
+  const col = scoreColor(score);
+
+  // Airspace banner
+  const airBanner = airspace.status === 'blocked'
+    ? `<div class="air-banner blocked">⛔ BLOCKED — ${esc(airspace.zone)}<br>${(airspace.dist/1000).toFixed(1)} km from centre · CAA authorisation required</div>`
+    : airspace.status === 'buffer'
+    ? `<div class="air-banner buffer">⚠ BUFFER ZONE — ${esc(airspace.zone)}<br>${(airspace.dist/1000).toFixed(1)} km from CTR boundary · Verify at airshare.co.nz</div>`
+    : `<div class="air-banner clear">✓ AIRSPACE CLEAR — No nearby CTR detected</div>`;
+
+  // Sub-scores
+  const subs = [
+    { label:'WEATHER',   val: wScore },
+    { label:'TERRAIN',   val: terrain.score },
+    { label:'RF / URBAN',val: rf },
+    { label:'OPEN AREA', val: area },
+  ];
+
+  const subsHtml = `<div class="sub-scores">${subs.map(s => `
+    <div class="sub-card">
+      <div class="sub-lbl">${s.label}</div>
+      <div class="sub-val" style="color:${scoreColor(s.val)}">${s.val}</div>
+      <div class="sub-bar"><div class="sub-fill" style="width:${s.val}%;background:${scoreColor(s.val)}"></div></div>
+    </div>`).join('')}</div>`;
+
+  // Weather section
+  let wxHtml = '';
+  if (wx) {
+    wxHtml = `
+      <div class="section-lbl">CURRENT WEATHER</div>
+      <div class="wx-grid">
+        <div class="wx-item">
+          <div class="wx-lbl">WIND SPEED</div>
+          <div class="wx-val">${Math.round(wx.wind_speed_10m)}<span class="wx-unit"> km/h</span></div>
+        </div>
+        <div class="wx-item">
+          <div class="wx-lbl">GUSTS</div>
+          <div class="wx-val">${Math.round(wx.wind_gusts_10m)}<span class="wx-unit"> km/h</span></div>
+        </div>
+        <div class="wx-item">
+          <div class="wx-lbl">DIRECTION</div>
+          <div class="wx-val">${Math.round(wx.wind_direction_10m)}°<span class="wx-unit"> ${windDir(wx.wind_direction_10m)}</span></div>
+        </div>
+        <div class="wx-item">
+          <div class="wx-lbl">PRECIPITATION</div>
+          <div class="wx-val">${wx.precipitation}<span class="wx-unit"> mm</span></div>
+        </div>
+        <div class="wx-item">
+          <div class="wx-lbl">CLOUD COVER</div>
+          <div class="wx-val">${wx.cloud_cover}<span class="wx-unit"> %</span></div>
+        </div>
+        <div class="wx-item">
+          <div class="wx-lbl">ELEVATION</div>
+          <div class="wx-val">${terrain.elevation}<span class="wx-unit"> m</span></div>
+        </div>
+      </div>
+      <div class="info-box" style="font-family:var(--mono);font-size:11px;color:var(--accent2)">
+        ${wmoDesc(wx.weather_code)} · Terrain Δ ±${terrain.variance}m</div>`;
+  } else {
+    wxHtml = `<div class="info-box" style="font-family:var(--mono);font-size:11px">Weather data unavailable · Elevation: ${terrain.elevation}m</div>`;
+  }
+
+  // Tags & notes
+  const tagsHtml = spot.tags?.length
+    ? `<div class="section-lbl">TAGS</div><div class="tags-row">${spot.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`
+    : '';
+
+  const notesHtml = spot.notes
+    ? `<div class="section-lbl">NOTES</div><div class="info-box">${esc(spot.notes)}</div>`
+    : '';
+
+  document.getElementById('intel-panel').innerHTML = `
+    <div class="intel-header">
+      <div>
+        <div class="intel-name">${esc(spot.name)}</div>
+        <div class="intel-meta">
+          ${spot.lat.toFixed(5)}, ${spot.lon.toFixed(5)}<br>
+          ${spot.area ? spot.area.toUpperCase() + ' OPEN AREA' : ''}
+        </div>
+      </div>
+      <div class="score-ring" style="border-color:${col};box-shadow:0 0 16px ${col}35">
+        <div class="snum" style="color:${col}">${score}</div>
+        <div class="slbl" style="color:${col}">SCORE</div>
+      </div>
+    </div>
+
+    ${airBanner}
+
+    <div class="section-lbl">SITE SCORES</div>
+    ${subsHtml}
+
+    ${wxHtml}
+    ${tagsHtml}
+    ${notesHtml}
+
+    <button class="btn-del" id="btn-del">⊗ DELETE SPOT</button>
+  `;
+
+  document.getElementById('btn-del').addEventListener('click', () => deleteSpot(spot.id));
+}
+
+// ═══════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════
+
+async function selectSpot(id) {
+  selectedId = id;
+  const spot = spots.find(s => s.id === id);
+  if (!spot) return;
+
+  switchTab('intel');
+  renderIntelLoading();
+  renderMarkers();
+  renderSpotsList();
+
+  const intel = await evaluateSpot(spot);
+  spot.cachedScore = intel.score;
+  save();
+
+  renderIntel(spot, intel);
+  renderMarkers();
+  renderSpotsList();
+}
+
+function addSpot() {
+  const name = document.getElementById('f-name').value.trim();
+  const lat  = parseFloat(document.getElementById('f-lat').value);
+  const lon  = parseFloat(document.getElementById('f-lon').value);
+  const area = document.getElementById('f-area').value;
+  const tags = document.getElementById('f-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const notes= document.getElementById('f-notes').value.trim();
+
+  if (!name)            { alert('Enter a name for this spot.'); return; }
+  if (isNaN(lat) || isNaN(lon)) { alert('Click the map to set coordinates, or enter them manually.'); return; }
+
+  const spot = { id: Date.now(), name, lat, lon, area, tags, notes, cachedScore: undefined };
+  spots.push(spot);
+  save();
+
+  // Clear form fields
+  ['f-name','f-tags','f-notes'].forEach(id => document.getElementById(id).value = '');
+
+  // Remove preview marker
+  if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
+  document.getElementById('hint-box').textContent = '◎ Click anywhere on the map to drop a marker, then enter details below';
+
+  renderMarkers();
+  selectSpot(spot.id);
+}
+
+function deleteSpot(id) {
+  if (!confirm('Delete this spot?')) return;
+  spots = spots.filter(s => s.id !== id);
+  if (markerMap[id]) { map.removeLayer(markerMap[id]); delete markerMap[id]; }
+  if (selectedId === id) selectedId = null;
+  save();
+  renderMarkers();
+  renderSpotsList();
+  document.getElementById('intel-panel').innerHTML =
+    '<div class="no-select">⊙ Select a marker on the map<br>to view site intelligence</div>';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ═══════════════════════════════════════════════════════
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchTab(btn.dataset.tab);
+    if (btn.dataset.tab === 'spots') renderSpotsList();
+  });
+});
+
+document.getElementById('btn-add').addEventListener('click', addSpot);
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Delete ALL spots? This cannot be undone.')) return;
+  spots = [];
+  selectedId = null;
+  save();
+  Object.values(markerMap).forEach(m => map.removeLayer(m));
+  Object.keys(markerMap).forEach(k => delete markerMap[k]);
+  if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
+  renderSpotsList();
+  document.getElementById('intel-panel').innerHTML =
+    '<div class="no-select">⊙ Select a marker on the map<br>to view site intelligence</div>';
+});
+
+map.on('click', e => {
+  const { lat, lng } = e.latlng;
+  document.getElementById('f-lat').value = lat.toFixed(6);
+  document.getElementById('f-lon').value = lng.toFixed(6);
+
+  if (previewMarker) map.removeLayer(previewMarker);
+  previewMarker = L.marker([lat, lng], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div class="pv-marker"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    })
+  }).addTo(map);
+
+  switchTab('add');
+  document.getElementById('hint-box').textContent =
+    `◉ Placed at ${lat.toFixed(4)}, ${lng.toFixed(4)} — enter a name and tap ADD`;
+  document.getElementById('f-name').focus();
+});
+
+// ═══════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════
+
+renderMarkers();
+renderSpotsList();
+
+</script>
+</body>
+</html>
