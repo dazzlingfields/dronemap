@@ -124,6 +124,13 @@
     }
     .button:hover { transform: translateY(-1px); filter: brightness(1.03); }
 
+    .button.secondary {
+      background: rgba(30, 41, 59, 0.86);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -215,7 +222,7 @@
       top: 18px;
       left: 18px;
       z-index: 500;
-      width: min(420px, calc(100% - 36px));
+      width: min(440px, calc(100% - 36px));
       background: rgba(8, 14, 28, 0.86);
       border: 1px solid var(--border);
       border-radius: 18px;
@@ -255,6 +262,13 @@
 
     .popup-title { font-weight: 800; margin-bottom: 6px; }
     .popup-line { color: #cbd5e1; font-size: 0.9rem; margin: 3px 0; }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
 
     @media (max-width: 960px) {
       body { overflow: auto; }
@@ -297,9 +311,32 @@
       </div>
 
       <div class="card">
+        <h2>Data source status</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="label">Spots</div>
+            <div class="value" id="spotCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Restricted</div>
+            <div class="value" id="restrictedCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Weather</div>
+            <div class="value">Mock</div>
+          </div>
+          <div class="stat">
+            <div class="label">Airspace</div>
+            <div class="value">Mock</div>
+          </div>
+        </div>
+        <p class="small-note">Next step is swapping the mock layers for real JSON files and API responses. GitHub Pages can host the static files without a backend.</p>
+      </div>
+
+      <div class="card">
         <h2>Current spot</h2>
         <div id="selectedSpotCard" class="spot-meta">
-          Click a marker to see the weather snapshot, airspace note, and the flyability score.
+          Click a marker to see the weather snapshot, airspace note, and flyability score.
         </div>
       </div>
 
@@ -325,7 +362,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
-    const spots = [
+    const fallbackSpots = [
       {
         id: 1,
         name: "Muriwai Coast",
@@ -398,6 +435,16 @@
       }
     ];
 
+    const spotListElement = document.getElementById('spotList');
+    const selectedSpotCard = document.getElementById('selectedSpotCard');
+    const spotCountElement = document.getElementById('spotCount');
+    const restrictedCountElement = document.getElementById('restrictedCount');
+
+    let spots = [];
+    let restrictedZones = [];
+    let selectedFilter = 'all';
+    let activeSpotId = null;
+
     const map = L.map('map', {
       zoomControl: true,
       minZoom: 4
@@ -408,8 +455,14 @@
     }).addTo(map);
 
     const markerLayer = L.layerGroup().addTo(map);
-    let selectedFilter = 'all';
-    let activeSpotId = null;
+    const restrictionLayer = L.geoJSON(null, {
+      style: {
+        color: '#ef4444',
+        weight: 2,
+        fillColor: '#ef4444',
+        fillOpacity: 0.12
+      }
+    }).addTo(map);
 
     function flyabilityScore(spot) {
       let score = 100;
@@ -442,8 +495,7 @@
     }
 
     function renderSpotList(filteredSpots) {
-      const list = document.getElementById('spotList');
-      list.innerHTML = '';
+      spotListElement.innerHTML = '';
 
       filteredSpots.forEach(spot => {
         const score = flyabilityScore(spot);
@@ -460,19 +512,18 @@
           </div>
         `;
         el.addEventListener('click', () => selectSpot(spot.id, true));
-        list.appendChild(el);
+        spotListElement.appendChild(el);
       });
 
       if (filteredSpots.length === 0) {
-        list.innerHTML = '<div class="spot-meta">No spots match the selected filter.</div>';
+        spotListElement.innerHTML = '<div class="spot-meta">No spots match the selected filter.</div>';
       }
     }
 
     function updateSelectedCard(spot) {
       const score = flyabilityScore(spot);
       const label = scoreLabel(score, spot.restriction);
-      const card = document.getElementById('selectedSpotCard');
-      card.innerHTML = `
+      selectedSpotCard.innerHTML = `
         <div style="font-weight:800; font-size:1.05rem; margin-bottom:6px;">${spot.name}</div>
         <div>Region: ${spot.region}</div>
         <div>Wind: ${spot.wind} km/h | Gusts: ${spot.gust} km/h | Rain: ${spot.rain}%</div>
@@ -515,6 +566,16 @@
       });
     }
 
+    function renderRestrictionLayer() {
+      restrictionLayer.clearLayers();
+      if (restrictedZones.length > 0) {
+        restrictionLayer.addData({
+          type: 'FeatureCollection',
+          features: restrictedZones
+        });
+      }
+    }
+
     function selectSpot(id, panToSpot) {
       activeSpotId = id;
       const spot = spots.find(s => s.id === id);
@@ -538,6 +599,35 @@
       if (!activeSpotId && filtered.length > 0) selectSpot(filtered[0].id, false);
     }
 
+    function updateCounters() {
+      spotCountElement.textContent = String(spots.length);
+      restrictedCountElement.textContent = String(spots.filter(s => s.restriction).length);
+    }
+
+    async function loadSpots() {
+      try {
+        const response = await fetch('./spots.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('spots.json missing');
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error('spots.json must be an array');
+        spots = data;
+      } catch (error) {
+        spots = fallbackSpots;
+      }
+    }
+
+    async function loadRestrictedZones() {
+      try {
+        const response = await fetch('./restrictions.geojson', { cache: 'no-store' });
+        if (!response.ok) throw new Error('restrictions.geojson missing');
+        const data = await response.json();
+        if (!data || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON');
+        restrictedZones = data.features;
+      } catch (error) {
+        restrictedZones = [];
+      }
+    }
+
     document.getElementById('searchBtn').addEventListener('click', () => {
       const value = document.getElementById('searchInput').value.trim().toLowerCase();
       const match = spots.find(spot => {
@@ -558,8 +648,16 @@
       applyFilter(chip.dataset.filter);
     });
 
-    applyFilter('all');
-    selectSpot(1, false);
+    async function init() {
+      await loadSpots();
+      await loadRestrictedZones();
+      updateCounters();
+      renderRestrictionLayer();
+      applyFilter('all');
+      if (spots.length > 0) selectSpot(spots[0].id, false);
+    }
+
+    init();
   </script>
 </body>
 </html>
