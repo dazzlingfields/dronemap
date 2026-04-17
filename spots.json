@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "Muriwai Coast",
+    "region": "Auckland",
+    "lat": -36.817,
+    "lon": 174.447,
+    "tags": ["freestyle", "cinematic"],
+    "wind": 18,
+    "gust": 29,
+    "rain": 12,
+    "airspace": "Open coastal area, check local conditions.",
+    "restriction": false,
+    "notes": "Strong coastal wind can make this tricky for small quads."
+  },
+  {
+    "id": 2,
+    "name": "Bethells Beach",
+    "region": "Auckland",
+    "lat": -36.894,
+    "lon": 174.453,
+    "tags": ["freestyle", "longrange"],
+    "wind": 14,
+    "gust": 22,
+    "rain": 8,
+    "airspace": "Nearby controlled airspace may apply.",
+    "restriction": false,
+    "notes": "Good line-of-sight, wind can rise quickly."
+  },
+  {
+    "id": 3,
+    "name": "Rangitoto Foreshore",
+    "region": "Auckland",
+    "lat": -36.836,
+    "lon": 174.793,
+    "tags": ["cinematic"],
+    "wind": 10,
+    "gust": 16,
+    "rain": 5,
+    "airspace": "Near controlled harbour airspace.",
+    "restriction": true,
+    "notes": "Airspace risk near city."
+  },
+  {
+    "id": 4,
+    "name": "Piha Beach",
+    "region": "Auckland",
+    "lat": -36.955,
+    "lon": 174.468,
+    "tags": ["freestyle", "cinematic"],
+    "wind": 16,
+    "gust": 25,
+    "rain": 10,
+    "airspace": "Generally open but check conditions.",
+    "restriction": false,
+    "notes": "Wind funneling through cliffs."
+  },
+  {
+    "id": 5,
+    "name": "Castlepoint Beach",
+    "region": "Wairarapa",
+    "lat": -40.900,
+    "lon": 176.227,
+    "tags": ["longrange", "cinematic"],
+    "wind": 12,
+    "gust": 20,
+    "rain": 18,
+    "airspace": "Low traffic, generally open.",
+    "restriction": false,
+    "notes": "Good long range coastal lines."
+  }
+]
