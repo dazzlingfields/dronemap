@@ -1,220 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NZ FPV Spot Finder</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      height: 100vh;
-      background: #0b0f19;
-    }
-
-    .sidebar {
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 14px;
-      overflow-y: auto;
-      border-right: 1px solid #1f2937;
-    }
-
-    .title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 14px;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    .label {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-top: 8px;
-    }
-
-    input, textarea {
-      width: 100%;
-      margin-top: 6px;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #243244;
-      background: #0b1220;
-      color: white;
-      outline: none;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .primary { background: #2563eb; color: white; }
-    .secondary { background: #1f2937; color: white; }
-
-    .spotBox {
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #1f2937;
-      font-size: 11px;
-      margin: 3px 3px 0 0;
-    }
-
-    #map {
-      height: 100vh;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NZ FPV Site Intelligence</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+body{margin:0;display:grid;grid-template-columns:380px 1fr;height:100vh;font-family:system-ui;background:#0b0f19;color:#e5e7eb}
+.sidebar{padding:12px;overflow:auto;background:#0f172a;border-right:1px solid #1f2937}
+.card{background:#111827;padding:12px;border-radius:12px;margin-bottom:12px}
+input,textarea{width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid #243244;background:#0b1220;color:white}
+button{width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;cursor:pointer}
+.primary{background:#2563eb;color:white}
+.secondary{background:#1f2937;color:white}
+#map{height:100%}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#1f2937;font-size:11px;margin:2px}
+</style>
 </head>
 <body>
 
 <div class="sidebar">
 
-  <div class="title">NZ FPV Planner</div>
+<div class="card">
+<h3>Add Spot</h3>
+<input id="name" placeholder="Name" />
+<input id="region" placeholder="Region" />
+<input id="lat" placeholder="Lat" />
+<input id="lon" placeholder="Lon" />
+<input id="tags" placeholder="Tags comma separated" />
+<textarea id="notes" placeholder="Notes"></textarea>
+<button class="secondary" id="useMap">Use map center</button>
+<button class="primary" id="add">Add Spot</button>
+</div>
 
-  <div class="card">
-    <div style="font-weight:600">Selected Location</div>
-    <div id="selectedSpot" class="spotBox" style="margin-top:8px; opacity:0.85">
-      Click map or marker
-    </div>
-  </div>
-
-  <div class="card">
-    <div style="font-weight:600">Add Spot</div>
-
-    <div class="label">Name</div>
-    <input id="name" />
-
-    <div class="label">Region</div>
-    <input id="region" />
-
-    <div class="label">Latitude</div>
-    <input id="lat" />
-
-    <div class="label">Longitude</div>
-    <input id="lon" />
-
-    <div class="label">Tags</div>
-    <input id="tags" placeholder="freestyle, cinematic" />
-
-    <div class="label">Notes</div>
-    <textarea id="notes" rows="3"></textarea>
-
-    <button class="secondary" id="useMap">Use map location</button>
-    <button class="primary" id="add">Add spot</button>
-    <button class="secondary" id="export">Export JSON</button>
-  </div>
+<div class="card">
+<h3>Selected Spot Intelligence</h3>
+<div id="selected">Click a marker</div>
+</div>
 
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
 
-const map = L.map('map').setView([-41, 174.8], 6);
+// CORE DATA
+let spots = JSON.parse(localStorage.getItem('spots')||'[]');
+let markers = L.layerGroup();
+let selected = null;
+markers.addTo(map);
+
+const map = L.map('map').setView([-41,174.8],6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-let spots = JSON.parse(localStorage.getItem('spots') || '[]');
-let markers = L.layerGroup().addTo(map);
-let selected = null;
-let tempMarker = null;
+function save(){localStorage.setItem('spots',JSON.stringify(spots));}
 
-function save() {
-  localStorage.setItem('spots', JSON.stringify(spots));
+// ENVIRONMENT
+async function getElevation(lat,lon){
+try{
+const r=await fetch(`https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`);
+const d=await r.json();return d.results[0].elevation;
+}catch(e){return 0;}}
+
+async function terrainScore(lat,lon){
+const c=await getElevation(lat,lon);
+const o=[[0.01,0],[-0.01,0],[0,0.01],[0,-0.01]];
+let v=0;
+for(let i=0;i<o.length;i++){
+const e=await getElevation(lat+o[i][0],lon+o[i][1]);
+v+=Math.abs(e-c);
+}
+const avg=v/o.length;
+if(avg<10)return 100;
+if(avg<30)return 70;
+if(avg<60)return 40;
+return 20;
 }
 
-function render() {
-  markers.clearLayers();
-
-  spots.forEach(s => {
-    const m = L.marker([s.lat, s.lon]).addTo(markers);
-    m.on('click', () => selectSpot(s));
-  });
+function rfInterferenceScore(spot){
+let s=100;
+if(spot.region.toLowerCase().includes('auckland'))s-=40;
+if((spot.tags||[]).includes('urban'))s-=30;
+return Math.max(0,s);
 }
 
-function selectSpot(s) {
-  selected = s;
-
-  document.getElementById('selectedSpot').innerHTML = `
-    <b>${s.name}</b><br>
-    ${s.region}<br>
-    ${(s.tags || []).map(t => `<span class='badge'>${t}</span>`).join('')}<br>
-    <br>
-    ${s.notes || ''}
-  `;
+// AIRSPACE
+function checkAirspaceConflict(spot){
+if(spot.region.toLowerCase().includes('auckland'))return 'CTR';
+return null;
 }
 
-function setTemp(lat, lon) {
-  document.getElementById('lat').value = lat.toFixed(6);
-  document.getElementById('lon').value = lon.toFixed(6);
-
-  if (tempMarker) map.removeLayer(tempMarker);
-  tempMarker = L.marker([lat, lon], {opacity: 0.6}).addTo(map);
+// INTELLIGENCE ENGINE
+function computeSiteIntelligence(spot,t,r,air){
+let score=100;
+let wind=spot.wind||12;
+let rain=spot.rain||10;
+score-=(wind-8)*2;
+score-=rain*0.5;
+score=score*0.5+t*0.5;
+score=score*0.7+r*0.3;
+if(air==='CTR')return 0;
+if(score<0)score=0;
+if(score>100)score=100;
+return Math.round(score);
 }
 
-function addSpot() {
-  const s = {
-    id: Date.now(),
-    name: name.value,
-    region: region.value,
-    lat: parseFloat(lat.value),
-    lon: parseFloat(lon.value),
-    tags: tags.value.split(',').map(t => t.trim()).filter(Boolean),
-    notes: notes.value
-  };
-
-  spots.push(s);
-  save();
-  render();
-  selectSpot(s);
+async function evaluateSpot(spot){
+const t=await terrainScore(spot.lat,spot.lon);
+const r=rfInterferenceScore(spot);
+const air=checkAirspaceConflict(spot);
+const score=computeSiteIntelligence(spot,t,r,air);
+return{t,r,air,score};
 }
 
-function exportJSON() {
-  const blob = new Blob([JSON.stringify(spots, null, 2)], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'spots.json';
-  a.click();
+function renderIntel(spot,intel){
+document.getElementById('selected').innerHTML=
+`<b>${spot.name}</b><br>${spot.region}<br><br>
+<span class='badge'>Score ${intel.score}</span>
+<span class='badge'>Terrain ${intel.t}</span>
+<span class='badge'>RF ${intel.r}</span>
+<span class='badge'>Air ${intel.air||'Clear'}</span>`;
 }
 
-add.onclick = addSpot;
-useMap.onclick = () => {
-  const c = map.getCenter();
-  setTemp(c.lat, c.lng);
-};
+// MAP
+function render(){markers.clearLayers();spots.forEach(s=>{
+const m=L.marker([s.lat,s.lon]).addTo(markers);
+m.on('click',()=>selectSpot(s));});}
 
-export.onclick = exportJSON;
+async function selectSpot(s){selected=s;const intel=await evaluateSpot(s);renderIntel(s,intel);}
 
-map.on('click', e => setTemp(e.latlng.lat, e.latlng.lng));
+function addSpot(){
+const s={id:Date.now(),name:name.value,region:region.value,lat:+lat.value,lon:+lon.value,tags:tags.value.split(',').map(t=>t.trim())};
+spots.push(s);save();render();selectSpot(s);}
+
+function setCenter(){const c=map.getCenter();lat.value=c.lat.toFixed(6);lon.value=c.lng.toFixed(6);}
+
+add.onclick=addSpot;
+useMap.onclick=setCenter;
+map.on('click',e=>setCenter(e.latlng));
 
 render();
 
 </script>
-
 </body>
 </html>
