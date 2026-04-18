@@ -5,849 +5,497 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NZ FPV · Site Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@300;400;500;600;700&family=Overpass+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-/* ─────────────────────────────────────────────────────────
-   TOKENS
-───────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   TOKENS — dual theme
+══════════════════════════════════════════════════════════ */
 :root {
-  --sans: 'Barlow', sans-serif;
-  --cond: 'Barlow Condensed', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
+  --sans:'Overpass',sans-serif;
+  --mono:'Overpass Mono',monospace;
 
-  --green:  #10b981;
-  --lime:   #84cc16;
-  --amber:  #f59e0b;
-  --orange: #f97316;
-  --red:    #ef4444;
-  --purple: #a855f7;
-  --cyan:   #22d3ee;
-  --blue:   #3b82f6;
+  /* aviation colours (theme-independent) */
+  --ctr-c:  #c084fc;   /* Class C / military — purple/magenta  */
+  --ctr-d:  #fb923c;   /* Class D — amber                      */
+  --ctr-g:  #facc15;   /* 4 km uncontrolled — yellow           */
+  --glide:  #60a5fa;   /* Gliding — blue                       */
+  --danger: #f87171;   /* Danger / restricted — red            */
 
-  --r: 8px;
-  --r-sm: 5px;
-  --trans: background-color .25s, color .25s, border-color .25s;
+  --score-5:#10b981; --score-4:#84cc16;
+  --score-3:#f59e0b; --score-2:#f97316; --score-1:#ef4444;
+
+  --r:8px; --r-s:5px;
 }
 
-/* ── DARK (default) ── */
-:root, [data-theme="dark"] {
-  --bg:       #07111c;
-  --bg2:      #0c1a28;
-  --bg3:      #101f30;
-  --bg4:      #132435;
-  --bd:       #1c3248;
-  --bd2:      #254560;
-  --tx:       #d0e8f8;
-  --tx2:      #5d87a8;
-  --tx3:      #2b4a64;
-  --acc:      #10b981;
-  --acc-glow: #10b98122;
-  --shadow:   0 8px 40px #00000070;
-  --shadow-sm:0 2px 12px #00000060;
-  --map-tile: dark;
+/* ── DARK ── */
+[data-theme="dark"] {
+  --bg:   #07121f; --bg2:  #0c1c2e; --bg3:  #0f2035;
+  --bg4:  #122440; --bg5:  #172a4a;
+  --bd:   #1d3554; --bd2:  #264970;
+  --tx:   #c8dff5; --tx2:  #5a84a8; --tx3:  #2a4a68;
+  --acc:  #38bdf8; --acc2: #0ea5e9;
+  --glw:  #38bdf812;
+  --sh:   0 8px 40px #00000075; --sh-s: 0 2px 14px #00000060;
 }
-
 /* ── LIGHT ── */
 [data-theme="light"] {
-  --bg:       #f0f6fb;
-  --bg2:      #ffffff;
-  --bg3:      #f7fafd;
-  --bg4:      #eaf2f8;
-  --bd:       #ccdaeb;
-  --bd2:      #b0c8df;
-  --tx:       #0e1f30;
-  --tx2:      #4a6e8a;
-  --tx3:      #b0c8df;
-  --acc:      #0d9668;
-  --acc-glow: #0d966814;
-  --shadow:   0 4px 24px #00000014;
-  --shadow-sm:0 2px 8px #00000012;
-  --map-tile: light;
+  --bg:   #eef4fa; --bg2:  #ffffff; --bg3:  #f5f9fd;
+  --bg4:  #ebf3fa; --bg5:  #ddeaf6;
+  --bd:   #c2d6ea; --bd2:  #9cbbd8;
+  --tx:   #0a1e30; --tx2:  #3d6884; --tx3:  #b0cfe5;
+  --acc:  #0284c7; --acc2: #0369a1;
+  --glw:  #0284c710;
+  --sh:   0 4px 24px #00000016; --sh-s: 0 2px 8px #00000012;
 }
 
-/* ── AUTO (respects OS) ── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:#07111c;--bg2:#0c1a28;--bg3:#101f30;--bg4:#132435;
-    --bd:#1c3248;--bd2:#254560;--tx:#d0e8f8;--tx2:#5d87a8;--tx3:#2b4a64;
-    --acc:#10b981;--acc-glow:#10b98122;--shadow:0 8px 40px #00000070;
-    --shadow-sm:0 2px 12px #00000060;--map-tile:dark;
-  }
+/* ═══ BASE ═══════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  display:flex;
+  font-family:var(--sans);
+  font-size:14px;
+  background:var(--bg);
+  color:var(--tx);
+  transition:background .22s,color .22s;
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg:#f0f6fb;--bg2:#ffffff;--bg3:#f7fafd;--bg4:#eaf2f8;
-    --bd:#ccdaeb;--bd2:#b0c8df;--tx:#0e1f30;--tx2:#4a6e8a;--tx3:#b0c8df;
-    --acc:#0d9668;--acc-glow:#0d966814;--shadow:0 4px 24px #00000014;
-    --shadow-sm:0 2px 8px #00000012;--map-tile:light;
-  }
-}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 
-/* ─────────────────────────────────────────────────────────
-   RESET + BASE
-───────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
-body {
-  display: flex;
-  font-family: var(--sans);
-  font-size: 14px;
-  background: var(--bg);
-  color: var(--tx);
-  transition: var(--trans);
-}
-a { color: var(--acc); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px; }
-
-/* ─────────────────────────────────────────────────────────
-   SIDEBAR
-───────────────────────────────────────────────────────── */
-.sidebar {
-  width: 360px;
-  min-width: 360px;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg2);
-  border-right: 1px solid var(--bd);
-  box-shadow: var(--shadow);
-  z-index: 500;
-  position: relative;
-  transition: var(--trans);
+/* ═══ SIDEBAR ════════════════════════════════════════════ */
+.sb{
+  width:350px;min-width:350px;
+  display:flex;flex-direction:column;
+  background:var(--bg2);
+  border-right:1px solid var(--bd);
+  box-shadow:var(--sh);
+  z-index:500;
+  position:relative;
+  transition:background .22s,border-color .22s;
 }
 
 /* ── Header ── */
-.sb-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 16px 12px;
-  border-bottom: 1px solid var(--bd);
-  background: var(--bg3);
-  flex-shrink: 0;
+.sb-head{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;
+  background:var(--bg3);
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
 }
-.sb-logo {
-  width: 36px; height: 36px;
-  border-radius: var(--r-sm);
-  border: 1.5px solid var(--acc);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 0 12px var(--acc-glow);
-  flex-shrink: 0;
-  background: var(--acc-glow);
+.logo{
+  display:flex;align-items:center;gap:9px;flex:1;min-width:0;
 }
-.sb-titles { flex: 1; min-width: 0; }
-.sb-title {
-  font-family: var(--cond);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 2px;
-  color: var(--tx);
-  line-height: 1;
+.logo-mark{
+  width:32px;height:32px;flex-shrink:0;
+  border:1.5px solid var(--acc);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  background:var(--glw);
+  box-shadow:0 0 10px var(--glw);
 }
-.sb-sub {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx2);
-  letter-spacing: 1px;
-  margin-top: 3px;
+.logo-text{
+  font-family:var(--mono);font-weight:600;
+  font-size:11px;letter-spacing:2.5px;
+  color:var(--tx);line-height:1;
 }
-.header-btns { display: flex; gap: 6px; }
-.hbtn {
-  width: 30px; height: 30px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--bd);
-  background: var(--bg4);
-  color: var(--tx2);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  transition: all .15s;
+.logo-sub{
+  font-family:var(--mono);font-size:8px;
+  color:var(--tx2);letter-spacing:1.5px;margin-top:3px;
 }
-.hbtn:hover { border-color: var(--acc); color: var(--acc); background: var(--acc-glow); }
+.head-actions{display:flex;gap:5px;flex-shrink:0}
+.hbtn{
+  width:28px;height:28px;border-radius:var(--r-s);
+  border:1px solid var(--bd);background:transparent;
+  color:var(--tx2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all .14s;
+  font-family:var(--sans);
+}
+.hbtn:hover{border-color:var(--bd2);color:var(--acc);background:var(--glw)}
 
 /* ── Tabs ── */
-.sb-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--bd);
-  flex-shrink: 0;
+.sb-tabs{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  border-bottom:1px solid var(--bd);flex-shrink:0;
 }
-.tab-btn {
-  padding: 10px 8px;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--bd);
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  transition: all .15s;
-  position: relative;
+.tab-btn{
+  padding:9px 6px;background:transparent;border:none;
+  border-right:1px solid var(--bd);
+  color:var(--tx2);
+  font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  cursor:pointer;transition:all .14s;position:relative;
 }
-.tab-btn:last-child { border-right: none; }
-.tab-btn:hover { background: var(--bg3); color: var(--tx); }
-.tab-btn.active {
-  background: var(--bg3);
-  color: var(--acc);
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{background:var(--bg3);color:var(--tx)}
+.tab-btn.active{background:var(--bg4);color:var(--acc)}
+.tab-btn.active::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:var(--acc);
 }
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--acc);
-}
-.tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--acc);
-  color: #fff;
-  font-size: 8px;
-  font-weight: 700;
-  margin-left: 4px;
-  vertical-align: middle;
+.tab-ct{
+  display:inline-block;min-width:16px;height:16px;
+  border-radius:8px;background:var(--acc);color:#fff;
+  font-size:8px;font-weight:600;line-height:16px;
+  text-align:center;padding:0 4px;
+  margin-left:4px;vertical-align:middle;
 }
 
-/* ── Tab panels ── */
-.tab-panel {
-  display: none;
-  flex: 1;
-  overflow: hidden;
-  flex-direction: column;
-}
-.tab-panel.active { display: flex; }
+/* ── Panels ── */
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.panel.active{display:flex}
 
-/* ─────────────────────────────────────────────────────────
-   SPOTS PANEL
-───────────────────────────────────────────────────────── */
-.spots-toolbar {
-  display: flex;
-  gap: 7px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--bd);
-  flex-shrink: 0;
+/* ═══ SPOTS PANEL ════════════════════════════════════════ */
+.spots-bar{
+  display:flex;gap:7px;padding:10px 12px;
+  border-bottom:1px solid var(--bd);flex-shrink:0;
 }
-.search-wrap {
-  flex: 1;
-  position: relative;
+.s-wrap{flex:1;position:relative}
+.s-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--tx3);pointer-events:none}
+.s-input{
+  width:100%;padding:8px 10px 8px 30px;
+  background:var(--bg);border:1px solid var(--bd);
+  border-radius:var(--r-s);color:var(--tx);
+  font-family:var(--sans);font-size:13px;
+  transition:border-color .14s;
 }
-.search-wrap svg {
-  position: absolute;
-  left: 9px; top: 50%;
-  transform: translateY(-50%);
-  color: var(--tx2);
-  pointer-events: none;
+.s-input:focus{outline:none;border-color:var(--acc)}
+.s-input::placeholder{color:var(--tx3)}
+.s-sort{
+  padding:8px 10px;background:var(--bg);border:1px solid var(--bd);
+  border-radius:var(--r-s);color:var(--tx2);
+  font-family:var(--mono);font-size:10px;cursor:pointer;min-width:82px;
 }
-.search-input {
-  width: 100%;
-  padding: 8px 10px 8px 32px;
-  background: var(--bg);
-  border: 1px solid var(--bd);
-  border-radius: var(--r-sm);
-  color: var(--tx);
-  font-family: var(--sans);
-  font-size: 13px;
-  transition: border-color .15s;
-}
-.search-input:focus { outline: none; border-color: var(--acc); }
-.search-input::placeholder { color: var(--tx3); }
-.sort-select {
-  padding: 8px 10px;
-  background: var(--bg);
-  border: 1px solid var(--bd);
-  border-radius: var(--r-sm);
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 10px;
-  cursor: pointer;
-  min-width: 80px;
-}
-.sort-select:focus { outline: none; }
-.sort-select option { background: var(--bg2); }
+.s-sort:focus{outline:none}
+.s-sort option{background:var(--bg2)}
 
-.spots-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.spots-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.spot-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--bg3);
+  border:1px solid var(--bd);border-radius:var(--r);
+  cursor:pointer;transition:all .14s;
 }
-.spot-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: all .15s;
+.spot-row:hover{border-color:var(--bd2);background:var(--bg4)}
+.spot-row.sel{border-color:var(--acc);background:var(--glw)}
+.spot-name{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spot-sub{font-family:var(--mono);font-size:9.5px;color:var(--tx2);margin-top:3px}
+.score-ring{
+  flex-shrink:0;width:38px;height:38px;border-radius:50%;
+  border:1.5px solid currentColor;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11.5px;font-weight:600;
+  transition:all .2s;
 }
-.spot-item:hover { border-color: var(--bd2); background: var(--bg4); }
-.spot-item.active { border-color: var(--acc); background: var(--acc-glow); }
-.spot-info { flex: 1; min-width: 0; }
-.spot-name {
-  font-weight: 600;
-  font-size: 13.5px;
-  color: var(--tx);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.spots-empty{
+  padding:48px 20px;text-align:center;
+  color:var(--tx2);font-family:var(--mono);font-size:11px;line-height:2.4;
 }
-.spot-meta {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--tx2);
-  margin-top: 3px;
+.sb-footer{
+  padding:7px 12px;border-top:1px solid var(--bd);
+  font-family:var(--mono);font-size:9px;color:var(--tx3);
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
 }
-.score-pill {
-  flex-shrink: 0;
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  border: 2px solid;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-}
-.spots-empty {
-  padding: 48px 20px;
-  text-align: center;
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 2.2;
-}
-.spots-footer {
-  padding: 8px 12px;
-  border-top: 1px solid var(--bd);
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx3);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
-}
-.db-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--tx3);
-}
-.db-dot.local { background: var(--amber); }
-.db-dot.ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
-.db-dot.err { background: var(--red); }
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--tx3)}
+.sdot.ok{background:#10b981;box-shadow:0 0 5px #10b981}
 
-/* ─────────────────────────────────────────────────────────
-   ADD PANEL
-───────────────────────────────────────────────────────── */
-.add-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* ═══ ADD PANEL ══════════════════════════════════════════ */
+.add-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.hint{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-left:3px solid var(--acc);border-radius:var(--r-s);
+  padding:9px 12px;font-family:var(--mono);font-size:10px;
+  color:var(--tx2);line-height:1.7;
 }
-.hint-box {
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-left: 3px solid var(--acc);
-  border-radius: var(--r-sm);
-  padding: 9px 12px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--tx2);
-  line-height: 1.7;
+.fg{display:flex;flex-direction:column;gap:4px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--tx2);font-weight:600}
+.fi,.fta{
+  padding:9px 11px;background:var(--bg);
+  border:1px solid var(--bd);border-radius:var(--r-s);
+  color:var(--tx);font-family:var(--sans);font-size:13.5px;
+  width:100%;transition:border-color .14s;
 }
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.field label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--tx2);
-  font-weight: 500;
+.fi:focus,.fta:focus{outline:none;border-color:var(--acc)}
+.fi::placeholder,.fta::placeholder{color:var(--tx3);font-size:12px}
+.fta{resize:vertical;min-height:66px}
+.btn-add{
+  padding:12px;background:var(--acc);color:#fff;
+  border:none;border-radius:var(--r);
+  font-family:var(--mono);font-weight:600;font-size:13px;
+  letter-spacing:2px;cursor:pointer;transition:all .18s;
+  box-shadow:0 0 16px var(--glw);
 }
-.field input,
-.field select,
-.field textarea {
-  padding: 9px 11px;
-  background: var(--bg);
-  border: 1px solid var(--bd);
-  border-radius: var(--r-sm);
-  color: var(--tx);
-  font-family: var(--sans);
-  font-size: 13.5px;
-  width: 100%;
-  transition: border-color .15s;
-}
-.field input:focus,
-.field select:focus,
-.field textarea:focus { outline: none; border-color: var(--acc); }
-.field input::placeholder,
-.field textarea::placeholder { color: var(--tx3); font-size: 12px; }
-.field select { cursor: pointer; }
-.field select option { background: var(--bg2); }
-.field textarea { resize: vertical; min-height: 68px; font-size: 13px; }
+.btn-add:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 4px 20px var(--glw)}
+.btn-add:active{transform:none;filter:none}
+.add-note{font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;line-height:1.9}
 
-.btn-add {
-  padding: 12px;
-  background: var(--acc);
-  color: #fff;
-  border: none;
-  border-radius: var(--r);
-  font-family: var(--cond);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 2px;
-  cursor: pointer;
-  transition: all .2s;
-  box-shadow: 0 0 20px var(--acc-glow);
+/* ═══ INTEL PANEL ════════════════════════════════════════ */
+.intel-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.intel-empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;color:var(--tx2);font-family:var(--mono);
+  font-size:11px;text-align:center;line-height:2.5;padding:40px 20px;
 }
-.btn-add:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 4px 24px var(--acc-glow); }
-.btn-add:active { transform: none; filter: none; }
+.intel-loading{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;
+  color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:1px;
+}
+.spin{
+  width:30px;height:30px;border-radius:50%;
+  border:2px solid var(--bd2);border-top-color:var(--acc);
+  animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-.add-footer {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx3);
-  text-align: center;
-  line-height: 1.9;
-  padding: 2px;
+/* ── Intel components ── */
+.sec-lbl{
+  font-family:var(--mono);font-size:9px;letter-spacing:2.5px;
+  color:var(--tx2);border-bottom:1px solid var(--bd);padding-bottom:5px;
 }
 
-/* ─────────────────────────────────────────────────────────
-   INTEL PANEL
-───────────────────────────────────────────────────────── */
-.intel-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.hero{
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:13px;
 }
-.intel-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 11px;
-  text-align: center;
-  line-height: 2.3;
-  padding: 40px 20px;
-  gap: 8px;
+.hero-txt{flex:1;min-width:0}
+.hero-name{
+  font-family:var(--mono);font-weight:600;font-size:16px;
+  color:var(--tx);line-height:1.2;letter-spacing:.3px;
 }
-.intel-loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 1px;
+.hero-meta{font-family:var(--mono);font-size:9.5px;color:var(--tx2);margin-top:5px;line-height:1.9}
+.big-ring{
+  flex-shrink:0;width:62px;height:62px;border-radius:50%;
+  border:2.5px solid;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
 }
-.spinner {
-  width: 32px; height: 32px;
-  border: 2px solid var(--bd2);
-  border-top-color: var(--acc);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.big-num{font-family:var(--mono);font-size:21px;font-weight:600;line-height:1}
+.big-lbl{font-family:var(--mono);font-size:7px;letter-spacing:1.5px;margin-top:1px;opacity:.75}
 
-/* Intel sections */
-.i-section { display: flex; flex-direction: column; gap: 6px; }
-.i-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 2.5px;
-  color: var(--tx2);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--bd);
+.air-alert{
+  border-radius:var(--r);padding:9px 12px;
+  font-family:var(--mono);font-size:10px;line-height:1.7;
 }
-.i-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  padding: 13px;
+.air-ok    {background:#10b98110;border:1px solid #10b98132;color:#10b981}
+.air-warn  {background:#f59e0b0d;border:1px solid #f59e0b35;color:#f59e0b}
+.air-block {background:#a855f70e;border:1px solid #a855f745;color:#c084fc}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+
+.tile{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:9px 11px;
 }
-.i-hero-text { flex: 1; min-width: 0; }
-.i-name {
-  font-family: var(--cond);
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--tx);
-  line-height: 1.2;
-  letter-spacing: .5px;
+.tile-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.8px;margin-bottom:5px}
+.tile-val{font-family:var(--mono);font-size:20px;font-weight:600;line-height:1}
+.tile-bar{height:3px;background:var(--bd);border-radius:2px;margin-top:7px;overflow:hidden}
+.tile-fill{height:100%;border-radius:2px;transition:width .65s ease}
+
+.tile-sm{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:7px 9px;
 }
-.i-coords {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--tx2);
-  margin-top: 4px;
-  line-height: 1.8;
+.tsm-lbl{font-family:var(--mono);font-size:8px;color:var(--tx2);letter-spacing:.5px}
+.tsm-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--acc);margin-top:2px;line-height:1.1}
+.tsm-u{font-size:8px;color:var(--tx2)}
+
+/* Forecast strip */
+.fc-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.fc-hour{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:8px 6px;
+  text-align:center;position:relative;
 }
-.i-score-ring {
-  flex-shrink: 0;
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  border: 2.5px solid;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all .3s;
-}
-.i-score-num {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-}
-.i-score-lbl {
-  font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 1.5px;
-  margin-top: 1px;
-  opacity: .7;
+.fc-hour.bad{border-color:#ef444450;background:#ef44440a}
+.fc-hour.warn{border-color:#f59e0b40;background:#f59e0b08}
+.fc-time{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:1px}
+.fc-icon{font-size:17px;margin:4px 0}
+.fc-wind{font-family:var(--mono);font-size:11px;font-weight:600;line-height:1.2}
+.fc-rain{font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:2px}
+.fc-warn-tag{
+  position:absolute;top:-1px;right:-1px;
+  background:#ef4444;color:#fff;border-radius:0 var(--r) 0 4px;
+  font-size:7px;font-family:var(--mono);padding:1px 4px;letter-spacing:.5px;
 }
 
-.air-banner {
-  border-radius: var(--r);
-  padding: 9px 12px;
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1.65;
+/* Drone cards */
+.drone-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.drone-card{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:10px 11px;
+  display:flex;flex-direction:column;gap:4px;
 }
-.air-clear  { background: #10b98110; border: 1px solid #10b98135; color: var(--green); }
-.air-buffer { background: #f59e0b0e; border: 1px solid #f59e0b38; color: var(--amber); }
-.air-blocked{ background: #a855f710; border: 1px solid #a855f740; color: var(--purple); }
+.drone-card.blocked{border-color:#ef444430;background:#ef44440a;opacity:.85}
+.drone-name{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tx);letter-spacing:.3px}
+.drone-spec{font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:1px}
+.drone-stars{display:flex;gap:3px;margin-top:5px}
+.star{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--bd2);transition:background .2s;
+}
+.star.lit{background:currentColor}
+.drone-verdict{font-family:var(--mono);font-size:9px;margin-top:3px;line-height:1.4}
 
-.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.score-tile {
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  padding: 10px 11px;
+/* Info box */
+.info{
+  background:var(--bg3);border:1px solid var(--bd);
+  border-radius:var(--r);padding:10px 12px;
+  font-family:var(--mono);font-size:10px;
+  color:var(--tx2);line-height:1.75;
 }
-.score-tile-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx2);
-  letter-spacing: .8px;
-  margin-bottom: 5px;
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{
+  background:var(--bg5);border:1px solid var(--bd);
+  border-radius:4px;padding:2px 8px;
+  font-family:var(--mono);font-size:9.5px;color:var(--tx2);
 }
-.score-tile-val {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
+.act-row{display:flex;gap:6px;flex-wrap:wrap}
+.abtn{
+  padding:8px 14px;background:transparent;
+  border:1px solid var(--bd);border-radius:var(--r-s);
+  color:var(--tx2);font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.5px;cursor:pointer;transition:all .14s;
 }
-.score-bar {
-  height: 3px;
-  background: var(--bd);
-  border-radius: 2px;
-  margin-top: 7px;
-  overflow: hidden;
+.abtn:hover{border-color:var(--bd2);color:var(--tx);background:var(--bg4)}
+.abtn-del{
+  padding:8px 14px;background:transparent;
+  border:1px solid #ef444430;border-radius:var(--r-s);
+  color:#f87171;font-family:var(--mono);font-size:9.5px;
+  cursor:pointer;transition:all .14s;
 }
-.score-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width .7s ease;
-}
+.abtn-del:hover{background:#ef44440c;border-color:#ef4444;color:#ef4444}
+.fine{font-family:var(--mono);font-size:8px;color:var(--tx3);line-height:1.8;padding-bottom:4px}
 
-/* Drone suitability */
-.drone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.drone-tile {
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  padding: 9px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.drone-name {
-  font-family: var(--cond);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--tx);
-  letter-spacing: .5px;
-}
-.drone-spec {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx2);
-}
-.drone-rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 3px;
-}
-.drone-dots {
-  display: flex;
-  gap: 3px;
-}
-.drone-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--bd2);
-  transition: background .3s;
-}
-.drone-dot.filled { background: currentColor; }
-.drone-verdict {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 500;
-}
+/* ═══ MAP ════════════════════════════════════════════════ */
+#map{flex:1;min-width:0;position:relative}
 
-/* Weather grid */
-.wx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.wx-tile {
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  padding: 8px 10px;
+/* Leaflet theme */
+.leaflet-popup-content-wrapper{
+  background:var(--bg2)!important;color:var(--tx)!important;
+  border:1px solid var(--bd)!important;border-radius:var(--r)!important;
+  box-shadow:var(--sh)!important;font-family:var(--sans)!important;
 }
-.wx-label { font-family: var(--mono); font-size: 9px; color: var(--tx2); }
-.wx-val {
-  font-family: var(--mono);
-  font-size: 17px;
-  color: var(--cyan);
-  margin-top: 3px;
-  line-height: 1.1;
+.leaflet-popup-tip{background:var(--bg2)!important}
+.leaflet-popup-close-button{color:var(--tx2)!important}
+.leaflet-control-zoom a{
+  background:var(--bg2)!important;color:var(--tx)!important;
+  border-color:var(--bd)!important;font-family:var(--sans)!important;
 }
-.wx-unit { font-size: 10px; color: var(--tx2); }
+.leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--acc)!important}
+.leaflet-bar{border:none!important;box-shadow:var(--sh-s)!important}
 
-.info-box {
-  background: var(--bg3);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  padding: 10px 12px;
-  font-size: 13px;
-  color: var(--tx2);
-  line-height: 1.65;
+/* ── Map toolbar (top-left of map) ── */
+.map-tb{
+  position:absolute;top:12px;left:12px;z-index:400;
+  display:flex;flex-direction:column;gap:6px;
 }
-.info-box.mono { font-family: var(--mono); font-size: 10px; }
-
-.tags-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
-.tag {
-  background: var(--bg4);
-  border: 1px solid var(--bd);
-  border-radius: 4px;
-  padding: 2px 9px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--tx2);
+.mbt{
+  display:flex;flex-direction:column;
+  background:var(--bg2);border:1px solid var(--bd);
+  border-radius:var(--r);box-shadow:var(--sh-s);overflow:visible;
+}
+.mbt-row{
+  display:flex;gap:1px;padding:5px;
+}
+.map-btn{
+  width:34px;height:34px;border-radius:6px;border:1px solid var(--bd);
+  background:var(--bg3);color:var(--tx2);
+  cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .14s;position:relative;font-family:var(--sans);
+}
+.map-btn:hover{border-color:var(--bd2);color:var(--acc);background:var(--glw)}
+.map-btn.active{border-color:var(--acc);color:var(--acc);background:var(--glw)}
+.map-btn-lbl{
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:7px;letter-spacing:.5px;
+  color:var(--tx2);white-space:nowrap;pointer-events:none;
 }
 
-.action-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.btn-action {
-  padding: 8px 14px;
-  background: transparent;
-  border: 1px solid var(--bd);
-  border-radius: var(--r-sm);
-  color: var(--tx2);
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: .5px;
-  cursor: pointer;
-  transition: all .15s;
+/* Layer dropdown — hidden by default */
+.layer-drop{
+  display:none;
+  position:absolute;top:calc(100% + 6px);left:0;
+  background:var(--bg2);border:1px solid var(--bd);
+  border-radius:var(--r);box-shadow:var(--sh);
+  min-width:130px;overflow:hidden;z-index:500;
 }
-.btn-action:hover { border-color: var(--bd2); color: var(--tx); background: var(--bg4); }
-.btn-del {
-  padding: 8px 14px;
-  background: transparent;
-  border: 1px solid #ef444430;
-  border-radius: var(--r-sm);
-  color: #f87171;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  cursor: pointer;
-  transition: all .15s;
+.layer-drop.open{display:block}
+.ld-hd{
+  padding:6px 11px;font-family:var(--mono);font-size:8px;
+  letter-spacing:2px;color:var(--tx2);
+  background:var(--bg3);border-bottom:1px solid var(--bd);
 }
-.btn-del:hover { border-color: var(--red); color: var(--red); background: #ef44440c; }
+.ld-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 11px;cursor:pointer;font-size:12.5px;
+  color:var(--tx2);transition:all .12s;border-bottom:1px solid var(--bd);
+}
+.ld-item:last-child{border-bottom:none}
+.ld-item:hover{background:var(--bg3);color:var(--tx)}
+.ld-item.active{background:var(--glw);color:var(--acc)}
+.ld-dot{width:8px;height:8px;border-radius:50%;border:2px solid currentColor;flex-shrink:0}
 
-/* ─────────────────────────────────────────────────────────
-   MAP
-───────────────────────────────────────────────────────── */
-#map {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  z-index: 1;
+/* ADS-B pill */
+.adsb-pill{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 11px;font-family:var(--mono);font-size:10px;
+  color:var(--tx2);cursor:pointer;
+  background:var(--bg2);border:1px solid var(--bd);
+  border-radius:var(--r);box-shadow:var(--sh-s);
+  transition:all .14s;
 }
+.adsb-pill:hover{border-color:var(--bd2)}
+.adsb-pill.active{border-color:var(--acc);color:var(--acc);background:var(--glw)}
+.tgl{
+  width:28px;height:15px;border-radius:8px;
+  background:var(--bd2);position:relative;transition:background .2s;flex-shrink:0;
+}
+.tgl::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:11px;height:11px;border-radius:50%;
+  background:#fff;transition:left .2s;
+}
+.tgl.on{background:var(--acc)}
+.tgl.on::after{left:15px}
 
-/* Leaflet overrides */
-.leaflet-popup-content-wrapper {
-  background: var(--bg2) !important;
-  color: var(--tx) !important;
-  border: 1px solid var(--bd) !important;
-  border-radius: var(--r) !important;
-  box-shadow: var(--shadow) !important;
-  font-family: var(--sans) !important;
+/* Map legend — bottom left */
+.map-legend{
+  position:absolute;bottom:26px;left:12px;z-index:400;
+  background:var(--bg2);border:1px solid var(--bd);
+  border-radius:var(--r);box-shadow:var(--sh-s);
+  overflow:hidden;min-width:152px;
 }
-.leaflet-popup-tip { background: var(--bg2) !important; }
-.leaflet-popup-close-button { color: var(--tx2) !important; }
-.leaflet-control-zoom a {
-  background: var(--bg2) !important;
-  color: var(--tx) !important;
-  border-color: var(--bd) !important;
+.leg-hd{
+  padding:5px 10px;font-family:var(--mono);font-size:8px;
+  letter-spacing:2px;color:var(--tx2);
+  background:var(--bg3);border-bottom:1px solid var(--bd);
 }
-.leaflet-control-zoom a:hover {
-  background: var(--bg3) !important;
-  color: var(--acc) !important;
+.leg-row{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 10px;font-family:var(--mono);font-size:9px;
+  color:var(--tx2);border-bottom:1px solid var(--bd);
 }
-.leaflet-bar { border: none !important; box-shadow: var(--shadow-sm) !important; }
-.leaflet-popup-content { font-family: var(--sans); font-size: 13px; }
-
-/* ── Floating map controls ── */
-.map-controls {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 400;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.mc-panel {
-  background: var(--bg2);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  min-width: 120px;
-}
-.mc-header {
-  padding: 6px 10px;
-  font-family: var(--mono);
-  font-size: 8px;
-  letter-spacing: 2px;
-  color: var(--tx2);
-  background: var(--bg3);
-  border-bottom: 1px solid var(--bd);
-}
-.mc-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  cursor: pointer;
-  font-size: 12.5px;
-  color: var(--tx2);
-  transition: all .12s;
-  border-bottom: 1px solid var(--bd);
-}
-.mc-item:last-child { border-bottom: none; }
-.mc-item:hover { background: var(--bg3); color: var(--tx); }
-.mc-item.active { background: var(--acc-glow); color: var(--acc); }
-.mc-dot {
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  flex-shrink: 0;
+.leg-row:last-child{border-bottom:none}
+.leg-sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.leg-div{
+  height:1px;background:var(--bd);margin:2px 0;
 }
 
-/* ADS-B control */
-.adsb-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-.adsb-toggle-row:hover { background: var(--bg3); }
-.adsb-label { font-family: var(--mono); font-size: 11px; color: var(--tx); }
-.toggle {
-  width: 32px; height: 17px;
-  border-radius: 9px;
-  background: var(--bd2);
-  position: relative;
-  transition: background .2s;
-  flex-shrink: 0;
-}
-.toggle::after {
-  content: '';
-  position: absolute;
-  top: 2px; left: 2px;
-  width: 13px; height: 13px;
-  border-radius: 50%;
-  background: #fff;
-  transition: left .2s;
-}
-.toggle.on { background: var(--acc); }
-.toggle.on::after { left: 17px; }
-.adsb-status {
-  padding: 4px 10px 7px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--tx3);
-}
-.adsb-status.live { color: var(--green); }
-.adsb-status.loading { color: var(--amber); }
-.adsb-status.error { color: var(--red); }
+/* Aircraft pulse */
+@keyframes acpulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* Map legend */
-.map-legend {
-  background: var(--bg2);
-  border: 1px solid var(--bd);
-  border-radius: var(--r);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-.legend-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 10px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--tx2);
-  border-bottom: 1px solid var(--bd);
-}
-.legend-row:last-child { border-bottom: none; }
-.legend-swatch {
-  width: 10px; height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-/* Aircraft pulse animation */
-@keyframes acpulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
-
-/* ─────────────────────────────────────────────────────────
-   RESPONSIVE
-───────────────────────────────────────────────────────── */
-@media (max-width: 680px) {
-  body { flex-direction: column; }
-  .sidebar { width: 100%; min-width: 0; height: 45vh; border-right: none; border-bottom: 1px solid var(--bd); }
-  #map { flex: 1; min-height: 0; }
-  .map-controls { top: auto; bottom: 50px; right: 8px; }
+/* ═══ RESPONSIVE ═════════════════════════════════════════ */
+@media(max-width:700px){
+  body{flex-direction:column}
+  .sb{width:100%;min-width:0;height:44vh;border-right:none;border-bottom:1px solid var(--bd)}
+  #map{flex:1;min-height:0}
+  .map-tb{top:8px;left:8px}
+  .map-legend{bottom:42px;left:8px}
 }
 </style>
 </head>
@@ -855,97 +503,75 @@ a:hover { text-decoration: underline; }
 
 <!-- ═══════════════════════════════════════════════════════
      SIDEBAR
-════════════════════════════════════════════════════════ -->
-<aside class="sidebar">
+═══════════════════════════════════════════════════════ -->
+<aside class="sb">
 
-  <!-- Header -->
-  <div class="sb-header">
-    <div class="sb-logo">🛸</div>
-    <div class="sb-titles">
-      <div class="sb-title">NZ FPV INTEL</div>
-      <div class="sb-sub">SITE PLANNING SYSTEM</div>
+  <div class="sb-head">
+    <div class="logo">
+      <div class="logo-mark">🛸</div>
+      <div>
+        <div class="logo-text">NZ FPV INTEL</div>
+        <div class="logo-sub">SITE PLANNING SYSTEM</div>
+      </div>
     </div>
-    <div class="header-btns">
-      <button class="hbtn" id="themeBtn" title="Toggle theme">◑</button>
+    <div class="head-actions">
+      <button class="hbtn" id="themeBtn" title="Toggle light / dark">◑</button>
     </div>
   </div>
 
-  <!-- Tabs -->
   <div class="sb-tabs">
     <button class="tab-btn active" data-tab="spots">SPOTS</button>
     <button class="tab-btn" data-tab="add">+ ADD</button>
-    <button class="tab-btn" data-tab="intel" id="intelTab">INTEL</button>
+    <button class="tab-btn" data-tab="intel">INTEL</button>
   </div>
 
-  <!-- ── SPOTS TAB ── -->
-  <div class="tab-panel active" id="panel-spots">
-    <div class="spots-toolbar">
-      <div class="search-wrap">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="search-input" id="spotSearch" placeholder="Search spots…">
+  <!-- SPOTS -->
+  <div class="panel active" id="panel-spots">
+    <div class="spots-bar">
+      <div class="s-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="s-input" id="spotSearch" placeholder="Search spots…">
       </div>
-      <select class="sort-select" id="spotSort">
+      <select class="s-sort" id="spotSort">
         <option value="score">SCORE ↓</option>
-        <option value="name">NAME</option>
+        <option value="name">A–Z</option>
         <option value="date">RECENT</option>
       </select>
     </div>
     <div class="spots-list" id="spotsList"></div>
-    <div class="spots-footer">
-      <div class="db-dot local" id="dbDot"></div>
-      <span id="dbStatus">Local storage</span>
+    <div class="sb-footer">
+      <div class="sdot ok"></div>
+      <span id="dbStat">Local storage active</span>
     </div>
   </div>
 
-  <!-- ── ADD TAB ── -->
-  <div class="tab-panel" id="panel-add">
-    <div class="add-scroll">
-
-      <div class="hint-box" id="addHint">
-        ◎ Click anywhere on the map to drop a pin —
-        coordinates auto-fill below
+  <!-- ADD -->
+  <div class="panel" id="panel-add">
+    <div class="add-body">
+      <div class="hint" id="addHint">◎ Click the map to drop a pin — coordinates auto-fill and location name is suggested</div>
+      <div class="fg"><div class="fl">DESIGNATION</div>
+        <input class="fi" id="fName" placeholder="Name auto-suggested when you click the map…"></div>
+      <div class="fr">
+        <div class="fg"><div class="fl">LATITUDE</div><input class="fi" id="fLat" placeholder="-41.2865"></div>
+        <div class="fg"><div class="fl">LONGITUDE</div><input class="fi" id="fLon" placeholder="174.7762"></div>
       </div>
-
-      <div class="field">
-        <label>SPOT NAME</label>
-        <input id="fName" placeholder="e.g. Wairarapa Valley — auto-suggested from map…">
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label>LATITUDE</label>
-          <input id="fLat" placeholder="-41.2865">
-        </div>
-        <div class="field">
-          <label>LONGITUDE</label>
-          <input id="fLon" placeholder="174.7762">
-        </div>
-      </div>
-
-      <div class="field">
-        <label>TAGS <span style="font-weight:400;opacity:.7">(comma separated)</span></label>
-        <input id="fTags" placeholder="coastal, farmland, hills, urban, paddock…">
-      </div>
-
-      <div class="field">
-        <label>NOTES</label>
-        <textarea id="fNotes" placeholder="Access info, hazards, parking, power lines, local rules…"></textarea>
-      </div>
-
+      <div class="fg"><div class="fl">TAGS</div>
+        <input class="fi" id="fTags" placeholder="coastal, farmland, hills, urban, paddock…"></div>
+      <div class="fg"><div class="fl">NOTES</div>
+        <textarea class="fta" id="fNotes" placeholder="Access, hazards, power lines, parking, landowner contact…"></textarea></div>
       <button class="btn-add" id="btnAdd">⊕ ADD SPOT</button>
-
-      <div class="add-footer">
-        Terrain &amp; openness auto-analysed on save<br>
-        ⚠ Always verify airspace at airshare.co.nz before flying
+      <div class="add-note">
+        Terrain, openness &amp; airspace auto-analysed on add<br>
+        ⚠ Always verify airspace at <a href="https://airshare.co.nz" target="_blank">airshare.co.nz</a> before flying
       </div>
     </div>
   </div>
 
-  <!-- ── INTEL TAB ── -->
-  <div class="tab-panel" id="panel-intel">
-    <div class="intel-scroll" id="intelContent">
+  <!-- INTEL -->
+  <div class="panel" id="panel-intel">
+    <div class="intel-body" id="intelBody">
       <div class="intel-empty">
-        <span style="font-size:28px">◉</span>
+        <span style="font-size:30px;opacity:.4">◎</span>
         Select a spot marker<br>to load site intelligence
       </div>
     </div>
@@ -955,1072 +581,950 @@ a:hover { text-decoration: underline; }
 
 <!-- ═══════════════════════════════════════════════════════
      MAP
-════════════════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════════ -->
 <div id="map">
 
-  <!-- Floating controls -->
-  <div class="map-controls">
+  <!-- Floating toolbar (top-left) — separate from sidebar controls -->
+  <div class="map-tb">
+    <div class="mbt">
+      <div class="mbt-row" style="gap:5px">
 
-    <!-- Layer selector -->
-    <div class="mc-panel">
-      <div class="mc-header">MAP LAYER</div>
-      <div class="mc-item active" data-layer="dark">
-        <div class="mc-dot"></div>Dark
+        <!-- Layer picker button -->
+        <div style="position:relative">
+          <button class="map-btn" id="btnLayers" title="Map layers">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </button>
+          <!-- Dropdown — hidden by default, toggled by button only -->
+          <div class="layer-drop" id="layerDrop">
+            <div class="ld-hd">MAP LAYER</div>
+            <div class="ld-item active" data-layer="dark"><div class="ld-dot"></div>Dark</div>
+            <div class="ld-item" data-layer="light"><div class="ld-dot" style="border-color:#38bdf8"></div>Light</div>
+            <div class="ld-item" data-layer="satellite"><div class="ld-dot" style="border-color:#22c55e"></div>Satellite</div>
+            <div class="ld-item" data-layer="topo"><div class="ld-dot" style="border-color:#a78bfa"></div>Topo</div>
+            <div class="ld-item" data-layer="street"><div class="ld-dot" style="border-color:#fb923c"></div>Street</div>
+          </div>
+        </div>
+
+        <!-- Zones toggle -->
+        <button class="map-btn active" id="btnZones" title="Toggle airspace zones">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+
+        <!-- ADS-B toggle -->
+        <button class="map-btn" id="btnAdsb" title="Toggle ADS-B live traffic">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>
+        </button>
+
       </div>
-      <div class="mc-item" data-layer="light">
-        <div class="mc-dot" style="border-color:#0ea5e9"></div>Light
-      </div>
-      <div class="mc-item" data-layer="satellite">
-        <div class="mc-dot" style="border-color:#22c55e"></div>Satellite
-      </div>
-      <div class="mc-item" data-layer="topo">
-        <div class="mc-dot" style="border-color:#a78bfa"></div>Topo
-      </div>
-      <div class="mc-item" data-layer="street">
-        <div class="mc-dot" style="border-color:#fb923c"></div>Street
+
+      <!-- ADS-B status bar (only visible when ADS-B on) -->
+      <div id="adsbBar" style="display:none;padding:5px 10px 6px;font-family:var(--mono);font-size:9px;color:var(--tx2);border-top:1px solid var(--bd)">
+        <span id="adsbStat">Fetching…</span>
       </div>
     </div>
-
-    <!-- ADS-B -->
-    <div class="mc-panel">
-      <div class="mc-header">ADS-B TRAFFIC</div>
-      <div class="adsb-toggle-row" id="adsbToggleRow">
-        <span class="adsb-label" id="adsbLbl">Off</span>
-        <div class="toggle" id="adsbToggle"></div>
-      </div>
-      <div class="adsb-status" id="adsbStatus">OpenSky Network</div>
-    </div>
-
-    <!-- Legend -->
-    <div class="map-legend">
-      <div class="mc-header" style="border-bottom:1px solid var(--bd)">SCORE KEY</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#10b981"></div>80–100 Optimal</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#84cc16"></div>60–79  Good</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f59e0b"></div>40–59  Marginal</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f97316"></div>1–39   Poor</div>
-      <div class="legend-row" style="border-top:1px solid var(--bd)"><div class="legend-swatch" style="background:#a855f7;opacity:.7"></div>Class C/MIL CTR</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f59e0b;opacity:.7"></div>Class D CTR</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f97316;opacity:.65"></div>4 km zone</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#3b82f6;opacity:.65"></div>Gliding area</div>
-    </div>
-
   </div>
+
+  <!-- Legend (bottom-left) -->
+  <div class="map-legend">
+    <div class="leg-hd">SCORE / ZONE KEY</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#10b981"></div>80–100 Optimal</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#84cc16"></div>60–79  Good</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#f59e0b"></div>40–59  Marginal</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#f97316"></div>1–39   Poor</div>
+    <div class="leg-row" style="border-top:1px solid var(--bd)"><div class="leg-sw" style="background:#c084fc;opacity:.75"></div>Class C/MIL CTR</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#fb923c;opacity:.75"></div>Class D CTR</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#facc15;opacity:.75"></div>4 km certified</div>
+    <div class="leg-row"><div class="leg-sw" style="background:#60a5fa;opacity:.75"></div>Gliding area</div>
+  </div>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* ═══════════════════════════════════════════════════════════
-   NZ AERODROMES — CAA Part 101
-   • Class C/D/MIL: ATC authorisation required (CTR radius)
-   • Class G (certified): notify operator within 4 km
-   • Gliding centres: frequent low-level soaring, no transponders
-   ⚠ Radii are APPROXIMATE. Always verify on airshare.co.nz
-═══════════════════════════════════════════════════════════ */
-const AERODROMES = [
-  // ── Class C (International, ~5 NM CTR) ─────────────────
-  { id:'NZAA', name:'Auckland International',        lat:-37.0082, lon:174.7917, cls:'C',   r:9260 },
-  { id:'NZWN', name:'Wellington International',      lat:-41.3272, lon:174.8050, cls:'C',   r:9260 },
-  { id:'NZCH', name:'Christchurch International',    lat:-43.4894, lon:172.5322, cls:'C',   r:9260 },
-  { id:'NZQN', name:'Queenstown',                    lat:-45.0211, lon:168.7389, cls:'C',   r:9260 },
-  // ── Military ────────────────────────────────────────────
-  { id:'NZWP', name:'RNZAF Whenuapai',               lat:-36.7878, lon:174.6306, cls:'MIL', r:9260 },
-  { id:'NZOH', name:'RNZAF Ohakea',                  lat:-40.2064, lon:175.3883, cls:'MIL', r:9260 },
-  { id:'NZMB', name:'RNZAF Woodbourne / Blenheim',   lat:-41.5183, lon:173.8694, cls:'MIL', r:9260 },
-  // ── Class D (~3 NM CTR) ─────────────────────────────────
-  { id:'NZHN', name:'Hamilton',                      lat:-37.8664, lon:175.3321, cls:'D',   r:5556 },
-  { id:'NZTG', name:'Tauranga',                      lat:-37.6716, lon:176.1960, cls:'D',   r:5556 },
-  { id:'NZDN', name:'Dunedin',                       lat:-45.9281, lon:170.1983, cls:'D',   r:5556 },
-  { id:'NZRO', name:'Rotorua',                       lat:-38.1092, lon:176.3172, cls:'D',   r:5556 },
-  { id:'NZPM', name:'Palmerston North',              lat:-40.3206, lon:175.6168, cls:'D',   r:5556 },
-  { id:'NZNS', name:'Nelson',                        lat:-41.2983, lon:173.2211, cls:'D',   r:5556 },
-  { id:'NZNR', name:'Napier (Hawkes Bay)',            lat:-39.4658, lon:176.8700, cls:'D',   r:5556 },
-  { id:'NZNV', name:'Invercargill',                  lat:-46.4124, lon:168.3131, cls:'D',   r:5556 },
-  { id:'NZNP', name:'New Plymouth',                  lat:-39.0086, lon:174.1792, cls:'D',   r:5556 },
-  { id:'NZWR', name:'Whangarei',                     lat:-35.7683, lon:174.3653, cls:'D',   r:5556 },
-  { id:'NZGS', name:'Gisborne',                      lat:-38.6632, lon:177.9773, cls:'D',   r:5556 },
-  // ── Uncontrolled certified aerodromes (4 km Part 101) ───
-  { id:'NZAR', name:'Ardmore',                       lat:-37.0297, lon:174.9730, cls:'G',   r:4000 },
-  { id:'NZPP', name:'Paraparaumu',                   lat:-40.9047, lon:174.9894, cls:'G',   r:4000 },
-  { id:'NZAP', name:'Taupo',                         lat:-38.7397, lon:176.0840, cls:'G',   r:4000 },
-  { id:'NZWF', name:'Wanaka',                        lat:-44.7222, lon:169.2461, cls:'G',   r:4000 },
-  { id:'NZTU', name:'Timaru',                        lat:-44.3028, lon:171.2253, cls:'G',   r:4000 },
-  { id:'NZHK', name:'Hokitika',                      lat:-42.7136, lon:170.9856, cls:'G',   r:4000 },
-  { id:'NZWS', name:'Westport',                      lat:-41.7381, lon:171.5806, cls:'G',   r:4000 },
-  { id:'NZGM', name:'Greymouth',                     lat:-42.4617, lon:171.1906, cls:'G',   r:4000 },
-  { id:'NZWU', name:'Whanganui',                     lat:-39.9622, lon:175.0253, cls:'G',   r:4000 },
-  { id:'NZMS', name:'Masterton (Hood)',               lat:-40.9731, lon:175.6339, cls:'G',   r:4000 },
-  { id:'NZKK', name:'Kerikeri / Bay of Islands',     lat:-35.2628, lon:173.9117, cls:'G',   r:4000 },
-  { id:'NZOU', name:'Oamaru',                        lat:-44.9700, lon:171.0819, cls:'G',   r:4000 },
-  { id:'NZRT', name:'Rangiora',                      lat:-43.2961, lon:172.5358, cls:'G',   r:4000 },
-  { id:'NZFF', name:'Feilding',                      lat:-40.2311, lon:175.5822, cls:'G',   r:4000 },
-  { id:'NZTK', name:'Takaka / Golden Bay',            lat:-40.8136, lon:172.7753, cls:'G',   r:4000 },
-  { id:'NZKA', name:'Kaitaia',                       lat:-35.0697, lon:173.2856, cls:'G',   r:4000 },
-  { id:'NZCX', name:'Coromandel',                    lat:-36.7911, lon:175.5072, cls:'G',   r:4000 },
-  { id:'NZWV', name:'Wairoa',                        lat:-39.0067, lon:177.4078, cls:'G',   r:4000 },
-  { id:'NZNM', name:'Napier City (Hastings)',         lat:-39.6500, lon:176.7400, cls:'G',   r:3500 },
-  { id:'NZWK', name:'Whakatane',                     lat:-37.9206, lon:177.0153, cls:'G',   r:4000 },
-  { id:'NZIV', name:'Invercargill City',              lat:-46.4300, lon:168.3400, cls:'G',   r:3500 },
-  { id:'NZBH', name:'Balclutha',                     lat:-46.1800, lon:169.8000, cls:'G',   r:3000 },
-  { id:'NZCI', name:'Chatham Island',                lat:-43.8100, lon:-176.4600,cls:'G',   r:4000 },
-  // ── Gliding / soaring (low-level thermal traffic) ───────
-  { id:'GLID-OMA', name:'Omarama Gliding Centre',    lat:-44.5194, lon:169.9797, cls:'GLIDE',r:5000 },
-  { id:'GLID-MAT', name:'Matamata Gliding',          lat:-37.7289, lon:175.7736, cls:'GLIDE',r:4000 },
-  { id:'GLID-FEI', name:'Feilding Gliding',          lat:-40.2100, lon:175.5800, cls:'GLIDE',r:3500 },
-  { id:'GLID-PUK', name:'Pukekohe Gliding',          lat:-37.2000, lon:174.9000, cls:'GLIDE',r:3500 },
-  { id:'GLID-KAI', name:'Kaikoura Gliding',          lat:-42.3900, lon:173.7000, cls:'GLIDE',r:4000 },
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   NZ AERODROMES — CAA Part 101 / AIP NZ
+   ⚠ Zones are approximate. Verify: airshare.co.nz
+══════════════════════════════════════════════════════════ */
+const AD = [
+  // ── Class C International (CTR ~5 NM / 9.26 km) ────────
+  {id:'NZAA',n:'Auckland Intl',          la:-37.0082,lo:174.7917,c:'C',  r:9260},
+  {id:'NZWN',n:'Wellington Intl',         la:-41.3272,lo:174.8050,c:'C',  r:9260},
+  {id:'NZCH',n:'Christchurch Intl',       la:-43.4894,lo:172.5322,c:'C',  r:9260},
+  {id:'NZQN',n:'Queenstown',              la:-45.0211,lo:168.7389,c:'C',  r:9260},
+  // ── Military CTR ────────────────────────────────────────
+  {id:'NZWP',n:'RNZAF Whenuapai',         la:-36.7878,lo:174.6306,c:'M',  r:9260},
+  {id:'NZOH',n:'RNZAF Ohakea',            la:-40.2064,lo:175.3883,c:'M',  r:9260},
+  {id:'NZMB',n:'RNZAF Woodbourne',        la:-41.5183,lo:173.8694,c:'M',  r:9260},
+  // ── Class D (CTR ~3 NM / 5.56 km) ──────────────────────
+  {id:'NZHN',n:'Hamilton',                la:-37.8664,lo:175.3321,c:'D',  r:5556},
+  {id:'NZTG',n:'Tauranga',                la:-37.6716,lo:176.1960,c:'D',  r:5556},
+  {id:'NZDN',n:'Dunedin',                 la:-45.9281,lo:170.1983,c:'D',  r:5556},
+  {id:'NZRO',n:'Rotorua',                 la:-38.1092,lo:176.3172,c:'D',  r:5556},
+  {id:'NZPM',n:'Palmerston North',         la:-40.3206,lo:175.6168,c:'D',  r:5556},
+  {id:'NZNS',n:'Nelson',                  la:-41.2983,lo:173.2211,c:'D',  r:5556},
+  {id:'NZNR',n:'Napier Hawkes Bay',        la:-39.4658,lo:176.8700,c:'D',  r:5556},
+  {id:'NZNV',n:'Invercargill',            la:-46.4124,lo:168.3131,c:'D',  r:5556},
+  {id:'NZNP',n:'New Plymouth',            la:-39.0086,lo:174.1792,c:'D',  r:5556},
+  {id:'NZWR',n:'Whangarei',               la:-35.7683,lo:174.3653,c:'D',  r:5556},
+  {id:'NZGS',n:'Gisborne',                la:-38.6632,lo:177.9773,c:'D',  r:5556},
+  // ── Class G certified — 4 km Part 101.209 exclusion ────
+  {id:'NZAR',n:'Ardmore',                 la:-37.0297,lo:174.9730,c:'G',  r:4000},
+  {id:'NZPP',n:'Paraparaumu',             la:-40.9047,lo:174.9894,c:'G',  r:4000},
+  {id:'NZAP',n:'Taupo',                   la:-38.7397,lo:176.0840,c:'G',  r:4000},
+  {id:'NZWF',n:'Wanaka',                  la:-44.7222,lo:169.2461,c:'G',  r:4000},
+  {id:'NZTU',n:'Timaru',                  la:-44.3028,lo:171.2253,c:'G',  r:4000},
+  {id:'NZHK',n:'Hokitika',                la:-42.7136,lo:170.9856,c:'G',  r:4000},
+  {id:'NZWS',n:'Westport',                la:-41.7381,lo:171.5806,c:'G',  r:4000},
+  {id:'NZGM',n:'Greymouth',               la:-42.4617,lo:171.1906,c:'G',  r:4000},
+  {id:'NZWU',n:'Whanganui',               la:-39.9622,lo:175.0253,c:'G',  r:4000},
+  {id:'NZMS',n:'Masterton Hood',          la:-40.9731,lo:175.6339,c:'G',  r:4000},
+  {id:'NZKK',n:'Kerikeri Bay of Islands', la:-35.2628,lo:173.9117,c:'G',  r:4000},
+  {id:'NZOU',n:'Oamaru',                  la:-44.9700,lo:171.0819,c:'G',  r:4000},
+  {id:'NZRT',n:'Rangiora',                la:-43.2961,lo:172.5358,c:'G',  r:4000},
+  {id:'NZFF',n:'Feilding',                la:-40.2311,lo:175.5822,c:'G',  r:4000},
+  {id:'NZTK',n:'Takaka Golden Bay',       la:-40.8136,lo:172.7753,c:'G',  r:4000},
+  {id:'NZKA',n:'Kaitaia',                 la:-35.0697,lo:173.2856,c:'G',  r:4000},
+  {id:'NZWK',n:'Whakatane',               la:-37.9206,lo:177.0153,c:'G',  r:4000},
+  {id:'NZCX',n:'Coromandel',              la:-36.7911,lo:175.5072,c:'G',  r:4000},
+  {id:'NZWV',n:'Wairoa',                  la:-39.0067,lo:177.4078,c:'G',  r:4000},
+  {id:'NZBH',n:'Balclutha',               la:-46.2289,lo:169.7544,c:'G',  r:3500},
+  {id:'NZIV',n:'Alexandra',               la:-45.2117,lo:169.3731,c:'G',  r:3500},
+  {id:'NZNM',n:'Motueka',                 la:-41.1233,lo:173.0036,c:'G',  r:3500},
+  // ── Gliding centres ─────────────────────────────────────
+  {id:'GLID-OMA',n:'Omarama Gliding',     la:-44.5194,lo:169.9797,c:'GLIDE',r:5000},
+  {id:'GLID-MAT',n:'Matamata Gliding',    la:-37.7289,lo:175.7736,c:'GLIDE',r:4000},
+  {id:'GLID-FEI',n:'Feilding Gliding',    la:-40.2100,lo:175.5800,c:'GLIDE',r:3500},
+  {id:'GLID-PUK',n:'Pukekohe Gliding',    la:-37.2000,lo:174.9000,c:'GLIDE',r:3500},
 ];
 
-const DANGER_AREAS = [
-  { name:'D109 Waiouru MTA',         lat:-39.45, lon:175.65, r:18000 },
-  { name:'D220 Kaipara Danger',       lat:-36.52, lon:174.15, r:14000 },
-  { name:'R110 Woodbourne Restricted',lat:-41.52, lon:173.87, r:8500  },
+const DANGER = [
+  {n:'D109 Waiouru MTA',  la:-39.45,lo:175.65,r:18000},
+  {n:'D220 Kaipara',      la:-36.52,lo:174.15,r:14000},
+  {n:'R110 Woodbourne',   la:-41.52,lo:173.87,r:8500},
 ];
 
-const URBAN_CENTRES = [
-  { lat:-36.8485, lon:174.7633, r:8000 },
-  { lat:-41.2865, lon:174.7762, r:5000 },
-  { lat:-43.5321, lon:172.6362, r:6000 },
-  { lat:-37.7870, lon:175.2793, r:4000 },
-  { lat:-37.6878, lon:176.1651, r:3500 },
-  { lat:-45.8788, lon:170.5028, r:3500 },
-  { lat:-40.3568, lon:175.6110, r:3000 },
-  { lat:-38.1368, lon:176.2497, r:2500 },
-  { lat:-39.0556, lon:174.0752, r:2500 },
-  { lat:-41.2706, lon:173.2840, r:2500 },
+const URBAN = [
+  {la:-36.8485,lo:174.7633,r:9000},{la:-41.2865,lo:174.7762,r:5500},
+  {la:-43.5321,lo:172.6362,r:6500},{la:-37.7870,lo:175.2793,r:4500},
+  {la:-37.6878,lo:176.1651,r:4000},{la:-45.8788,lo:170.5028,r:4000},
+  {la:-40.3568,lo:175.6110,r:3500},{la:-38.1368,lo:176.2497,r:3000},
+  {la:-39.0556,lo:174.0752,r:3000},{la:-41.2706,lo:173.2840,r:2800},
 ];
 
-/* ─────────────────────────────────────────────────────────
-   THEME
-───────────────────────────────────────────────────────── */
-const themeKey = 'fpv-theme';
+/* ══════════════════════════════════════════════════════════
+   THEME — independent of map layers
+══════════════════════════════════════════════════════════ */
+const THEME_KEY = 'fpv-theme';
 
-function getEffectiveTheme() {
-  const saved = localStorage.getItem(themeKey);
-  if (saved) return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+function getTheme() {
+  const s = localStorage.getItem(THEME_KEY);
+  if (s) return s;
+  return window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
 }
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem(themeKey, theme);
-  // Auto-switch map tile layer to match
-  const wantLayer = theme === 'light' ? 'light' : 'dark';
-  if (currentLayerKey !== 'satellite' && currentLayerKey !== 'topo') {
-    switchTileLayer(wantLayer);
-  }
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  // No map interaction here — theme and layers are independent
 }
+
+// Apply immediately on load
+setTheme(getTheme());
 
 document.getElementById('themeBtn').addEventListener('click', () => {
-  const cur = getEffectiveTheme();
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
+  setTheme(getTheme() === 'dark' ? 'light' : 'dark');
 });
 
-// Apply theme immediately on load (before map init)
-document.documentElement.setAttribute('data-theme', getEffectiveTheme());
-
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    STORAGE
-───────────────────────────────────────────────────────── */
-const STORE_KEY = 'nz-fpv-v3';
+══════════════════════════════════════════════════════════ */
+const SK = 'nz-fpv-v4';
 let spots = [];
+try { spots = JSON.parse(localStorage.getItem(SK) || '[]'); } catch {}
 
-function loadSpots() {
-  try {
-    spots = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
-  } catch { spots = []; }
+function save() { localStorage.setItem(SK, JSON.stringify(spots)); }
+function upsert(s) {
+  const i = spots.findIndex(x => x.id === s.id);
+  if (i >= 0) spots[i] = s; else spots.push(s);
+  save();
 }
+function remove(id) { spots = spots.filter(s => s.id !== id); save(); }
 
-function saveSpots() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(spots));
-}
-
-function upsertSpot(spot) {
-  const idx = spots.findIndex(s => s.id === spot.id);
-  if (idx >= 0) spots[idx] = spot; else spots.push(spot);
-  saveSpots();
-}
-
-function deleteSpot(id) {
-  spots = spots.filter(s => s.id !== id);
-  saveSpots();
-}
-
-loadSpots();
-
-/* ─────────────────────────────────────────────────────────
-   MAP — initialise FIRST
-───────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   MAP  (must init before any layer ops)
+══════════════════════════════════════════════════════════ */
 const map = L.map('map', { zoomControl: false }).setView([-41, 174.8], 6);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-const TILE_LAYERS = {
-  dark: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap © CARTO', maxZoom: 19, subdomains: 'abcd' }
-  ),
-  light: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap © CARTO', maxZoom: 19, subdomains: 'abcd' }
-  ),
-  satellite: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '© Esri', maxZoom: 19 }
-  ),
-  topo: L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenTopoMap', maxZoom: 17 }
-  ),
-  street: L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap', maxZoom: 19 }
-  ),
+const TILES = {
+  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',   {attribution:'© OSM © CARTO',maxZoom:19,subdomains:'abcd'}),
+  light:     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',  {attribution:'© OSM © CARTO',maxZoom:19,subdomains:'abcd'}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
+  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',                {attribution:'© OpenTopoMap',maxZoom:17}),
+  street:    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',              {attribution:'© OpenStreetMap',maxZoom:19}),
 };
 
-let currentLayerKey = getEffectiveTheme() === 'light' ? 'light' : 'dark';
-TILE_LAYERS[currentLayerKey].addTo(map);
+let curTile = getTheme() === 'light' ? 'light' : 'dark';
+TILES[curTile].addTo(map);
 
-function switchTileLayer(key) {
-  if (!TILE_LAYERS[key] || key === currentLayerKey) return;
-  map.removeLayer(TILE_LAYERS[currentLayerKey]);
-  currentLayerKey = key;
-  TILE_LAYERS[key].addTo(map);
-  document.querySelectorAll('.mc-item[data-layer]').forEach(el =>
+function switchTile(key) {
+  if (!TILES[key] || key === curTile) return;
+  map.removeLayer(TILES[curTile]);
+  curTile = key;
+  TILES[key].addTo(map);
+  document.querySelectorAll('.ld-item').forEach(el =>
     el.classList.toggle('active', el.dataset.layer === key)
   );
 }
 
-document.querySelectorAll('.mc-item[data-layer]').forEach(el => {
-  el.classList.toggle('active', el.dataset.layer === currentLayerKey);
-  el.addEventListener('click', () => switchTileLayer(el.dataset.layer));
+// Layer dropdown — ONLY toggled by its own button
+const layerDrop = document.getElementById('layerDrop');
+const btnLayers  = document.getElementById('btnLayers');
+
+btnLayers.addEventListener('click', e => {
+  e.stopPropagation();
+  layerDrop.classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!layerDrop.contains(e.target) && e.target !== btnLayers) {
+    layerDrop.classList.remove('open');
+  }
+});
+document.querySelectorAll('.ld-item').forEach(el => {
+  el.classList.toggle('active', el.dataset.layer === curTile);
+  el.addEventListener('click', () => {
+    switchTile(el.dataset.layer);
+    layerDrop.classList.remove('open');
+  });
 });
 
-/* ─── Airspace Zones ─────────────────────────────────── */
-const airGroup = L.layerGroup().addTo(map);
+/* ── Airspace zones ── */
+const zoneGroup = L.layerGroup().addTo(map);
+let zonesVisible = true;
 
-AERODROMES.forEach(ad => {
-  let col, dash, popupLabel;
-  switch (ad.cls) {
-    case 'C':
-      col = '#a855f7'; dash = '6 4';
-      popupLabel = 'Class C CTR — ATC authorisation required';
-      break;
-    case 'MIL':
-      col = '#ef4444'; dash = '4 4';
-      popupLabel = 'Military CTR — No unauthorised entry';
-      break;
-    case 'D':
-      col = '#f59e0b'; dash = '6 4';
-      popupLabel = 'Class D CTR — ATC authorisation required';
-      break;
-    case 'GLIDE':
-      col = '#3b82f6'; dash = '3 8';
-      popupLabel = 'Gliding area — frequent low-level soaring, no transponders';
-      break;
-    default:
-      col = '#f97316'; dash = '4 6';
-      popupLabel = 'Certified aerodrome — notify operator within 4 km (CAA Part 101.209)';
-  }
+AD.forEach(ad => {
+  let col, dash, tip;
+  if      (ad.c === 'C')     { col = '#c084fc'; dash = '7 4'; tip = 'Class C CTR · ATC authorisation required'; }
+  else if (ad.c === 'M')     { col = '#f87171'; dash = '4 4'; tip = 'Military CTR · No unauthorised entry'; }
+  else if (ad.c === 'D')     { col = '#fb923c'; dash = '7 4'; tip = 'Class D CTR · ATC authorisation required'; }
+  else if (ad.c === 'GLIDE') { col = '#60a5fa'; dash = '3 9'; tip = 'Gliding area · Low-level traffic, no transponders'; }
+  else                       { col = '#facc15'; dash = '5 6'; tip = 'Certified aerodrome · CAA Part 101.209: notify operator within 4 km'; }
 
-  L.circle([ad.lat, ad.lon], {
-    radius: ad.r,
-    color: col, weight: 1.5, opacity: .85,
-    fillColor: col, fillOpacity: .055,
-    dashArray: dash,
-  }).addTo(airGroup).bindPopup(
-    `<b style="font-size:13.5px">${ad.id} — ${ad.name}</b><br>
-     <span style="font-size:11px;opacity:.85">${popupLabel}</span><br>
-     <a href="https://www.airshare.co.nz" target="_blank" style="font-size:10px;color:#f59e0b">
-       ⚠ Verify on airshare.co.nz before flying</a>`
-  );
+  L.circle([ad.la, ad.lo], {
+    radius: ad.r, color: col, weight: 1.5, opacity: .85,
+    fillColor: col, fillOpacity: .06, dashArray: dash,
+  }).addTo(zoneGroup)
+    .bindPopup(`<b style="font-size:13px">${ad.id} — ${ad.n}</b><br>
+      <span style="font-size:11px;opacity:.85">${tip}</span><br>
+      <a href="https://www.airshare.co.nz" target="_blank"
+         style="font-size:10px;color:#f59e0b">⚠ Verify on airshare.co.nz</a>`);
 
-  // 2 km outer buffer ring for controlled airspace
-  if (['C', 'D', 'MIL'].includes(ad.cls)) {
-    L.circle([ad.lat, ad.lon], {
-      radius: ad.r + 2000,
-      color: col, weight: .8, opacity: .25,
-      fill: false, dashArray: '2 10'
-    }).addTo(airGroup);
+  if (['C','D','M'].includes(ad.c)) {
+    L.circle([ad.la, ad.lo], {
+      radius: ad.r + 2000, color: col,
+      weight: .8, opacity: .25, fill: false, dashArray: '2 10',
+    }).addTo(zoneGroup);
   }
 });
 
-DANGER_AREAS.forEach(d => {
-  L.circle([d.lat, d.lon], {
-    radius: d.r,
-    color: '#ef4444', weight: 1, opacity: .5,
-    fillColor: '#ef4444', fillOpacity: .04,
-    dashArray: '8 4'
-  }).addTo(airGroup).bindPopup(
-    `<b>${d.name}</b><br><span style="font-size:11px">Check NOTAM / AIP before any operation</span>`
-  );
+DANGER.forEach(d => {
+  L.circle([d.la, d.lo], {
+    radius: d.r, color: '#f87171', weight: 1, opacity: .5,
+    fillColor: '#f87171', fillOpacity: .05, dashArray: '8 4',
+  }).addTo(zoneGroup)
+    .bindPopup(`<b>${d.n}</b><br><span style="font-size:11px">Check NOTAM/AIP before any operation</span>`);
 });
 
-/* ─── Spot Markers ───────────────────────────────────── */
-const spotsGroup = L.layerGroup().addTo(map);
-const markerCache = {};
-let selectedId = null;
+document.getElementById('btnZones').addEventListener('click', () => {
+  zonesVisible = !zonesVisible;
+  if (zonesVisible) map.addLayer(zoneGroup);
+  else              map.removeLayer(zoneGroup);
+  document.getElementById('btnZones').classList.toggle('active', zonesVisible);
+});
 
-function scoreColor(s) {
-  if (s == null) return '#5d87a8';
-  if (s >= 80) return '#10b981';
-  if (s >= 60) return '#84cc16';
-  if (s >= 40) return '#f59e0b';
-  if (s >  0)  return '#f97316';
-  return '#a855f7';
+/* ── Spot markers ── */
+const spotGroup = L.layerGroup().addTo(map);
+const mCache = {};
+let selId = null;
+
+function scoreCol(s) {
+  if (s == null) return '#5a84a8';
+  if (s >= 80) return '#10b981'; if (s >= 60) return '#84cc16';
+  if (s >= 40) return '#f59e0b'; if (s >  0) return '#f97316';
+  return '#c084fc';
 }
-
-function makeSpotIcon(score, selected = false) {
-  const c = scoreColor(score);
-  const lbl = score != null ? score : '?';
+function mkIcon(score, sel = false) {
+  const c = scoreCol(score), l = score != null ? score : '?';
   return L.divIcon({
     className: '',
-    html: `<div style="
-      width:38px;height:38px;border-radius:50%;
-      background:${c}${selected ? '28' : '14'};
-      border:2px solid ${c};
+    html: `<div style="width:36px;height:36px;border-radius:50%;
+      background:${c}${sel ? '28' : '14'};border:2px solid ${c};
       display:flex;align-items:center;justify-content:center;
-      font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
-      color:${c};
-      box-shadow:0 0 ${selected ? 18 : 7}px ${c}${selected ? '90' : '50'};
-      transition:all .25s;
-    ">${lbl}</div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
+      font-family:'Overpass Mono',monospace;font-size:11px;font-weight:600;color:${c};
+      box-shadow:0 0 ${sel ? 18 : 7}px ${c}${sel ? '90' : '50'};transition:all .25s">${l}</div>`,
+    iconSize: [36, 36], iconAnchor: [18, 18],
   });
 }
-
 function redrawMarkers() {
-  // Remove old
-  Object.values(markerCache).forEach(m => map.removeLayer(m));
-  Object.keys(markerCache).forEach(k => delete markerCache[k]);
-
-  spots.forEach(spot => {
-    const m = L.marker([spot.lat, spot.lon], {
-      icon: makeSpotIcon(spot.score ?? null, spot.id === selectedId)
-    }).addTo(spotsGroup);
-    m.on('click', () => selectSpot(spot.id));
-    markerCache[spot.id] = m;
+  Object.values(mCache).forEach(m => map.removeLayer(m));
+  Object.keys(mCache).forEach(k => delete mCache[k]);
+  spots.forEach(s => {
+    const m = L.marker([s.la, s.lo], { icon: mkIcon(s.score ?? null, s.id === selId) }).addTo(spotGroup);
+    m.on('click', () => selectSpot(s.id));
+    mCache[s.id] = m;
   });
 }
 
-/* ─── ADS-B Layer ────────────────────────────────────── */
-const adsbGroup = L.layerGroup().addTo(map);
-let adsbEnabled = false;
-let adsbTimer = null;
-let lastAcData = [];
+/* ── ADS-B ── */
+const acGroup = L.layerGroup().addTo(map);
+let acOn = false, acTimer = null, acData = [];
 
-function altColor(alt) {
+function acCol(alt) {
   if (alt == null) return '#94a3b8';
-  if (alt < 300)  return '#ef4444';
-  if (alt < 1000) return '#f97316';
-  if (alt < 3000) return '#f59e0b';
-  return '#94a3b8';
+  return alt < 300 ? '#ef4444' : alt < 1000 ? '#f97316' : alt < 3000 ? '#f59e0b' : '#94a3b8';
 }
-
-function makeAcIcon(track, alt) {
-  const c = altColor(alt);
-  const low = alt != null && alt < 300;
+function mkAcIcon(track, alt) {
+  const c = acCol(alt), low = alt != null && alt < 300;
   return L.divIcon({
     className: '',
-    html: `<div style="
-      width:0;height:0;
-      border-left:5px solid transparent;
-      border-right:5px solid transparent;
-      border-bottom:13px solid ${c};
-      transform:rotate(${track || 0}deg);
+    html: `<div style="width:0;height:0;
+      border-left:5px solid transparent;border-right:5px solid transparent;
+      border-bottom:13px solid ${c};transform:rotate(${track || 0}deg);
       filter:drop-shadow(0 0 3px ${c}80);
-      ${low ? 'animation:acpulse 1s infinite;' : ''}
-    "></div>`,
-    iconSize: [10, 13],
-    iconAnchor: [5, 6],
+      ${low ? 'animation:acpulse 1s ease-in-out infinite' : ''}"></div>`,
+    iconSize: [10, 13], iconAnchor: [5, 6],
   });
 }
-
-async function refreshAdsb() {
-  const stat = document.getElementById('adsbStatus');
-  stat.textContent = 'Fetching…';
-  stat.className = 'adsb-status loading';
-
+async function fetchAdsb() {
+  const stat = document.getElementById('adsbStat');
+  stat.textContent = 'Fetching…'; stat.style.color = '#f59e0b';
   try {
     const b = map.getBounds();
-    const url = `https://opensky-network.org/api/states/all` +
-      `?lamin=${b.getSouth().toFixed(3)}&lamax=${b.getNorth().toFixed(3)}` +
-      `&lomin=${b.getWest().toFixed(3)}&lomax=${b.getEast().toFixed(3)}`;
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-
-    lastAcData = (data.states || []).filter(s => s[5] && s[6]);
-    adsbGroup.clearLayers();
-
-    lastAcData.forEach(s => {
-      const [icao, callsign, country, , , lon, lat, baro, onGround, vel, track, , , geo] = s;
-      if (onGround) return;
+    const r = await fetch(`https://opensky-network.org/api/states/all?lamin=${b.getSouth().toFixed(3)}&lamax=${b.getNorth().toFixed(3)}&lomin=${b.getWest().toFixed(3)}&lomax=${b.getEast().toFixed(3)}`);
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    acData = (d.states || []).filter(s => s[5] && s[6]);
+    acGroup.clearLayers();
+    acData.forEach(s => {
+      const [icao, cs, , , , lo, la, baro, gnd, vel, track, , , geo] = s;
+      if (gnd) return;
       const alt = baro ?? geo;
-      const m = L.marker([lat, lon], { icon: makeAcIcon(track, alt) });
-      const cs = (callsign || icao).trim() || icao;
-      const altStr = alt != null ? `${Math.round(alt)} m / ${Math.round(alt * 3.281)} ft` : 'unknown';
-      const spdStr = vel ? `${Math.round(vel * 1.944)} kt` : '—';
-      m.bindPopup(
-        `<b style="font-size:13px">${cs}</b><br>
-         <span style="font-size:11px">Alt: ${altStr}<br>Speed: ${spdStr}<br>Origin: ${country || '—'}</span>`
-      );
-      adsbGroup.addLayer(m);
+      const m = L.marker([la, lo], { icon: mkAcIcon(track, alt) });
+      m.bindPopup(`<b style="font-size:13px">${(cs||icao).trim()||icao}</b><br>
+        <span style="font-size:11px">
+          Alt: ${alt != null ? Math.round(alt)+'m / '+Math.round(alt*3.281)+'ft' : '—'}<br>
+          Speed: ${vel ? Math.round(vel*1.944)+' kt' : '—'}
+        </span>`);
+      acGroup.addLayer(m);
     });
-
-    const lowCount = lastAcData.filter(s => (s[7] ?? s[13]) != null && (s[7] ?? s[13]) < 500 && !s[8]).length;
-    stat.textContent = `${lastAcData.length} aircraft${lowCount ? ` · ${lowCount} low-level` : ''}`;
-    stat.className = 'adsb-status live';
-  } catch (e) {
-    stat.textContent = 'Rate-limited or unavailable';
-    stat.className = 'adsb-status error';
+    const low = acData.filter(s => (s[7]??s[13]) != null && (s[7]??s[13]) < 500 && !s[8]).length;
+    stat.textContent = `${acData.length} aircraft · ${low} low-level (<500m)`;
+    stat.style.color = low > 0 ? '#ef4444' : '#10b981';
+  } catch {
+    stat.textContent = 'Unavailable (rate-limited)';
+    stat.style.color = '#ef4444';
   }
 }
+document.getElementById('btnAdsb').addEventListener('click', () => {
+  acOn = !acOn;
+  document.getElementById('btnAdsb').classList.toggle('active', acOn);
+  document.getElementById('adsbBar').style.display = acOn ? 'block' : 'none';
+  if (acOn) { fetchAdsb(); acTimer = setInterval(fetchAdsb, 60000); }
+  else { clearInterval(acTimer); acGroup.clearLayers(); acData = []; }
+});
 
-function toggleAdsb() {
-  adsbEnabled = !adsbEnabled;
-  const pill = document.getElementById('adsbToggle');
-  const lbl = document.getElementById('adsbLbl');
-  const stat = document.getElementById('adsbStatus');
-  pill.classList.toggle('on', adsbEnabled);
-  lbl.textContent = adsbEnabled ? 'Live' : 'Off';
-  if (adsbEnabled) {
-    refreshAdsb();
-    adsbTimer = setInterval(refreshAdsb, 60000);
-  } else {
-    clearInterval(adsbTimer);
-    adsbGroup.clearLayers();
-    lastAcData = [];
-    stat.textContent = 'OpenSky Network';
-    stat.className = 'adsb-status';
-  }
-}
-document.getElementById('adsbToggleRow').addEventListener('click', toggleAdsb);
-
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    INTELLIGENCE ENGINE
-───────────────────────────────────────────────────────── */
+══════════════════════════════════════════════════════════ */
 
-// Haversine distance in metres
-function dist(la1, lo1, la2, lo2) {
+function hav(la1, lo1, la2, lo2) {
   const R = 6371000, r = Math.PI / 180;
-  const dL = (la2 - la1) * r, dO = (lo2 - lo1) * r;
-  const a = Math.sin(dL/2)**2 + Math.cos(la1*r) * Math.cos(la2*r) * Math.sin(dO/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const dL = (la2-la1)*r, dO = (lo2-lo1)*r;
+  const a = Math.sin(dL/2)**2 + Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Open-Meteo weather
-async function fetchWeather(lat, lon) {
+// Weather + 4-hour forecast
+async function fetchWeather(la, lo) {
   try {
     const r = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}` +
       `&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,cloud_cover,weather_code` +
-      `&wind_speed_unit=kmh&timezone=Pacific%2FAuckland`
+      `&hourly=wind_speed_10m,wind_gusts_10m,precipitation,weather_code` +
+      `&wind_speed_unit=kmh&timezone=Pacific%2FAuckland&forecast_days=1`
     );
     const d = await r.json();
-    return d.current || null;
-  } catch { return null; }
+    return { current: d.current || null, hourly: d.hourly || null };
+  } catch { return { current: null, hourly: null }; }
 }
 
-// Open-Meteo elevation (batched)
-async function fetchTerrain(lat, lon) {
+// Extract next N hourly slots starting from now
+function extractForecast(hourly, n = 4) {
+  if (!hourly?.time) return [];
+  const now = new Date();
+  const idx = hourly.time.findIndex(t => new Date(t) >= now);
+  const start = Math.max(0, idx < 0 ? hourly.time.length - n : idx);
+  return Array.from({ length: n }, (_, i) => {
+    const j = start + i;
+    if (j >= hourly.time.length) return null;
+    return {
+      time:  hourly.time[j],
+      wind:  hourly.wind_speed_10m[j],
+      gust:  hourly.wind_gusts_10m[j],
+      rain:  hourly.precipitation[j],
+      code:  hourly.weather_code[j],
+    };
+  }).filter(Boolean);
+}
+
+// Terrain
+async function fetchTerrain(la, lo) {
   try {
     const pts = [[0,0],[.012,0],[-.012,0],[0,.015],[0,-.015],[.008,.008],[-.008,-.008]];
-    const lats = pts.map(p => (lat + p[0]).toFixed(5)).join(',');
-    const lons = pts.map(p => (lon + p[1]).toFixed(5)).join(',');
-    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+    const las = pts.map(p=>(la+p[0]).toFixed(5)).join(',');
+    const los = pts.map(p=>(lo+p[1]).toFixed(5)).join(',');
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${las}&longitude=${los}`);
     const d = await r.json();
     const e = d.elevation || [0];
     const c = e[0];
-    const v = e.slice(1).reduce((a, x) => a + Math.abs(x - c), 0) / Math.max(e.length - 1, 1);
-    const score = v < 5 ? 98 : v < 15 ? 85 : v < 35 ? 68 : v < 70 ? 45 : v < 120 ? 24 : 10;
-    return { score: Math.round(score), elevation: Math.round(c), variance: Math.round(v) };
-  } catch { return { score: 50, elevation: 0, variance: 0 }; }
+    const v = e.slice(1).reduce((a,x) => a+Math.abs(x-c), 0) / Math.max(e.length-1, 1);
+    const s = v < 5 ? 98 : v < 15 ? 84 : v < 35 ? 66 : v < 70 ? 44 : v < 120 ? 22 : 10;
+    return { score: Math.round(s), elev: Math.round(c), variance: Math.round(v) };
+  } catch { return { score: 50, elev: 0, variance: 0 }; }
 }
 
-// Overpass API — auto-detect openness from building/landuse density
-async function analyzeOpenness(lat, lon) {
+// Overpass openness
+async function fetchOpen(la, lo) {
   try {
     const q = `[out:json][timeout:18];
 (
-  way["building"](around:400,${lat.toFixed(5)},${lon.toFixed(5)});
-  relation["building"](around:400,${lat.toFixed(5)},${lon.toFixed(5)});
-  way["landuse"~"^(residential|commercial|industrial|retail)$"](around:600,${lat.toFixed(5)},${lon.toFixed(5)});
+  way["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});
+  relation["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});
+  way["landuse"~"^(residential|commercial|industrial|retail)$"](around:600,${la.toFixed(5)},${lo.toFixed(5)});
 );
 out count;`;
     const r = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: q,
-      headers: { 'Content-Type': 'text/plain' }
+      method: 'POST', body: q, headers: { 'Content-Type': 'text/plain' }
     });
     const d = await r.json();
     const n = parseInt(d.elements?.[0]?.tags?.total ?? 0);
-    if (n === 0)   return { label: 'Open Rural',     score: 95, count: 0 };
-    if (n < 5)     return { label: 'Rural',           score: 80, count: n };
-    if (n < 18)    return { label: 'Semi-Rural',      score: 62, count: n };
-    if (n < 45)    return { label: 'Light Suburban',  score: 42, count: n };
-    if (n < 110)   return { label: 'Suburban',        score: 22, count: n };
-    return               { label: 'Dense Urban',      score: 8,  count: n };
-  } catch {
-    return { label: 'Undetermined', score: 50, count: null };
-  }
+    if (n === 0)  return { label: 'Open Rural',     score: 95, n };
+    if (n < 5)    return { label: 'Rural',           score: 80, n };
+    if (n < 18)   return { label: 'Semi-Rural',      score: 62, n };
+    if (n < 45)   return { label: 'Light Suburban',  score: 42, n };
+    if (n < 110)  return { label: 'Suburban',        score: 22, n };
+    return              { label: 'Dense Urban',      score: 8,  n };
+  } catch { return { label: 'Undetermined', score: 50, n: null }; }
 }
 
-// Airspace check
-function checkAirspace(lat, lon) {
-  let best = null, bestDist = Infinity;
-  for (const ad of AERODROMES) {
-    const d = dist(lat, lon, ad.lat, ad.lon);
-    if (d <= ad.r && d < bestDist) {
-      bestDist = d;
-      best = { status: 'blocked', ad, dist: d };
-    } else if (d <= ad.r + 2200 && ['C','D','MIL'].includes(ad.cls) && d < bestDist) {
-      bestDist = d;
-      best = { status: 'buffer', ad, dist: d };
-    }
+// Airspace
+function checkAir(la, lo) {
+  let best = null, bd = Infinity;
+  for (const ad of AD) {
+    const d = hav(la, lo, ad.la, ad.lo);
+    if (d <= ad.r && d < bd)                                     { bd = d; best = { st: 'blocked', ad, d }; }
+    else if (d <= ad.r + 2200 && ['C','D','M'].includes(ad.c) && d < bd) { bd = d; best = { st: 'buffer', ad, d }; }
   }
-  return best || { status: 'clear', ad: null, dist: null };
+  return best || { st: 'clear', ad: null, d: null };
 }
 
-// RF score based on urban proximity
-function calcRF(lat, lon) {
+// RF
+function calcRF(la, lo) {
   let s = 100;
-  for (const u of URBAN_CENTRES) {
-    const d = dist(lat, lon, u.lat, u.lon);
-    if (d < u.r)       s -= 45;
-    else if (d < u.r*2) s -= 22;
-    else if (d < u.r*4) s -= 8;
+  for (const u of URBAN) {
+    const d = hav(la, lo, u.la, u.lo);
+    if (d < u.r) s -= 48; else if (d < u.r*2) s -= 24; else if (d < u.r*4) s -= 9;
   }
   return Math.max(0, s);
 }
 
-// ADS-B nearby traffic score
-function calcAdsbScore(lat, lon) {
-  if (!adsbEnabled || !lastAcData.length) return { score: null, count: 0, low: 0 };
-  const near = lastAcData.filter(s => {
-    if (!s[5] || !s[6] || s[8]) return false;
-    return dist(lat, lon, s[6], s[5]) < 10000;
-  });
-  const low = near.filter(s => {
-    const alt = s[7] ?? s[13];
-    return alt != null && alt < 500;
-  }).length;
-  const score = low === 0 ? 100 : low === 1 ? 75 : low < 4 ? 45 : 15;
-  return { score, count: near.length, low };
+// ADS-B nearby
+function calcAcScore(la, lo) {
+  if (!acOn || !acData.length) return { score: null, n: 0, low: 0 };
+  const near = acData.filter(s => s[5] && s[6] && !s[8] && hav(la, lo, s[6], s[5]) < 10000);
+  const low  = near.filter(s => (s[7]??s[13]) != null && (s[7]??s[13]) < 500).length;
+  return { score: low === 0 ? 100 : low === 1 ? 72 : low < 4 ? 42 : 12, n: near.length, low };
 }
 
 // Weather score
-function calcWxScore(wx) {
+function calcWx(wx) {
   if (!wx) return 50;
-  const w = wx.wind_speed_10m  ?? 0;
-  const g = wx.wind_gusts_10m  ?? 0;
-  const p = wx.precipitation   ?? 0;
-  const ws = w <= 8 ? 100 : w <= 16 ? 88 : w <= 24 ? 65 : w <= 35 ? 32 : 0;
-  const gs = g <= 12 ? 100 : g <= 22 ? 82 : g <= 32 ? 55 : g <= 45 ? 22 : 0;
-  const ps = p === 0 ? 100 : p <= 0.2 ? 68 : p <= 1 ? 28 : 0;
-  return Math.round(ws * .40 + gs * .35 + ps * .25);
+  const w = wx.wind_speed_10m ?? 0, g = wx.wind_gusts_10m ?? 0, p = wx.precipitation ?? 0;
+  return Math.round(
+    (w<=8?100:w<=16?88:w<=24?65:w<=35?32:0) * .40 +
+    (g<=12?100:g<=22?82:g<=32?52:g<=45?20:0) * .35 +
+    (p===0?100:p<=.2?68:p<=1?28:0) * .25
+  );
 }
 
-// Drone suitability per class
-function calcDroneSuitability(wx, terrain, openness) {
-  const wind = wx?.wind_speed_10m ?? 15;
-  const gust = wx?.wind_gusts_10m ?? 20;
-  const rain = wx?.precipitation  ?? 0;
-  const ov   = openness.score;
-  const tv   = terrain.score;
+/* Drone suitability
+   openCaps[i] = min openness score required to achieve i stars (i=0..5)
+   If openScore < openCaps[1] → 0 stars (blocked by environment)
+   Enforces realistic limits: 5" & 7" in urban = 0-1 stars max            */
+const DRONES = [
+  { name: 'Tiny Whoop',    spec: '<85 mm · <100 g',
+    maxW: 14, maxG: 18, maxR: .2, minT: 10,
+    caps: [0, 8, 20, 38, 55, 72] },
+  { name: '3" Cinewhoop',  spec: '3 inch · ~250 g',
+    maxW: 26, maxG: 32, maxR: .3, minT: 15,
+    caps: [0, 22, 38, 55, 72, 86] },
+  { name: '5" Freestyle',  spec: '5 inch · ~600 g',
+    maxW: 44, maxG: 52, maxR: .8, minT: 22,
+    caps: [0, 48, 62, 74, 85, 93] },
+  { name: '7"+ Long Range',spec: '7 inch+ · >1 kg',
+    maxW: 54, maxG: 62, maxR: 1.5, minT: 30,
+    caps: [0, 70, 80, 88, 93, 97] },
+];
 
-  const TYPES = [
-    {
-      id: 'whoop', name: 'Tiny Whoop',
-      spec: '<85 mm · <100 g',
-      maxWind: 15, maxGust: 18, minOpen: 15, minTerrain: 10,
-      note: (w, g, r, o) => r > 0 ? 'Avoid rain — no sealing' : w > 15 ? 'Too windy' : o < 15 ? 'Too confined' : '✓ Ready to fly',
-    },
-    {
-      id: 'three', name: '3" Toothpick',
-      spec: '3 inch · ~200 g',
-      maxWind: 28, maxGust: 35, minOpen: 25, minTerrain: 15,
-      note: (w, g, r, o) => r > 0.5 ? 'Avoid rain' : w > 28 ? 'Too windy' : o < 25 ? 'Very tight' : '✓ Ready to fly',
-    },
-    {
-      id: 'five', name: '5" Freestyle',
-      spec: '5 inch · ~600 g',
-      maxWind: 45, maxGust: 55, minOpen: 45, minTerrain: 25,
-      note: (w, g, r, o) => r > 1 ? 'Risky in rain' : w > 45 ? 'High wind' : o < 45 ? 'Needs more space' : '✓ Ready to fly',
-    },
-    {
-      id: 'seven', name: '7"+ Long Range',
-      spec: '7 inch · >1 kg',
-      maxWind: 55, maxGust: 65, minOpen: 70, minTerrain: 35,
-      note: (w, g, r, o) => r > 2 ? 'Heavy rain risk' : o < 70 ? 'Needs open field' : w > 55 ? 'High wind' : '✓ Ready to fly',
-    },
-  ];
+function calcDrones(wx, terrain, open) {
+  const w = wx?.wind_speed_10m ?? 15;
+  const g = wx?.wind_gusts_10m ?? 20;
+  const r = wx?.precipitation  ?? 0;
+  const o = open.score;
 
-  return TYPES.map(t => {
-    const windOk  = wind <= t.maxWind;
-    const gustOk  = gust <= t.maxGust;
-    const openOk  = ov   >= t.minOpen;
-    const terOk   = tv   >= t.minTerrain;
-    const dryOk   = rain <= (t.id === 'seven' ? 2 : t.id === 'five' ? 1 : 0.3);
-    const checks  = [windOk, gustOk, openOk, terOk, dryOk];
-    const filled  = checks.filter(Boolean).length;
-    const rating  = Math.round(filled / checks.length * 5);
-    return {
-      ...t,
-      rating,
-      verdict: t.note(wind, gust, rain, ov),
-      ok: filled >= 4
-    };
+  return DRONES.map(d => {
+    // Max stars environment allows
+    let maxStars = 0;
+    for (let i = 5; i >= 1; i--) { if (o >= d.caps[i]) { maxStars = i; break; } }
+
+    // Condition score (0-5)
+    const wOk = w <= d.maxW, gOk = g <= d.maxG, rOk = r <= d.maxR, tOk = terrain.score >= d.minT;
+    // Simplified fraction calc
+    const cf = (wOk ? .40 : Math.max(0, .40*(1-Math.min((w-d.maxW)/d.maxW, 1)))) +
+               (gOk ? .35 : Math.max(0,.35*(1-((g-d.maxG)/d.maxG)))) +
+               (rOk ? .15 : 0) + (tOk ? .10 : 0);
+    const condStars = Math.round(cf * 5);
+
+    const stars   = Math.min(maxStars, condStars);
+    const blocked = maxStars === 0;
+    let verdict;
+    if (blocked)             verdict = 'Too confined / urban';
+    else if (!rOk)           verdict = 'Rain too heavy';
+    else if (!wOk)           verdict = 'Wind too strong';
+    else if (!gOk)           verdict = 'Gusts too high';
+    else if (!tOk)           verdict = 'Terrain too rough';
+    else if (stars >= 4)     verdict = 'Ready to fly';
+    else if (stars >= 2)     verdict = 'Flyable with care';
+    else                     verdict = 'Marginal — fly with caution';
+
+    return { ...d, stars, maxStars, blocked, verdict };
   });
 }
 
-// Composite score
-function calcComposite(wxS, terrain, rf, openness, airspace, adsb) {
-  if (airspace.status === 'blocked') return 0;
-  let s = wxS * .28 + terrain.score * .17 + rf * .12 + openness.score * .24;
-  s += (airspace.status === 'clear' ? 100 : 40) * .09;
-  if (adsb.score != null) s = s * .90 + adsb.score * .10;
-  else s /= .90; // normalise back when no ADS-B
-  if (airspace.status === 'buffer') s *= .82;
+// Composite
+function calcScore(wxS, terrain, rf, open, air, ac) {
+  if (air.st === 'blocked') return 0;
+  let s = wxS*.28 + terrain.score*.17 + rf*.12 + open.score*.24 + (air.st==='clear'?100:40)*.09;
+  if (ac.score != null) s = s * .90 + ac.score * .10; else s /= .90;
+  if (air.st === 'buffer') s *= .82;
   return Math.max(0, Math.min(100, Math.round(s)));
 }
 
-// Full evaluation
-async function evalSpot(spot) {
-  const [wx, terrain, openness] = await Promise.all([
-    fetchWeather(spot.lat, spot.lon),
-    fetchTerrain(spot.lat, spot.lon),
-    analyzeOpenness(spot.lat, spot.lon),
+// Full eval
+async function evalSpot(s) {
+  const [wxRes, terrain, open] = await Promise.all([
+    fetchWeather(s.la, s.lo),
+    fetchTerrain(s.la, s.lo),
+    fetchOpen(s.la, s.lo),
   ]);
-  const airspace = checkAirspace(spot.lat, spot.lon);
-  const rf       = calcRF(spot.lat, spot.lon);
-  const adsb     = calcAdsbScore(spot.lat, spot.lon);
-  const wxS      = calcWxScore(wx);
-  const score    = calcComposite(wxS, terrain, rf, openness, airspace, adsb);
-  const drones   = calcDroneSuitability(wx, terrain, openness);
-  return { score, wx, terrain, openness, airspace, rf, adsb, wxS, drones };
+  const { current: wx, hourly } = wxRes;
+  const forecast = extractForecast(hourly, 4);
+  const air   = checkAir(s.la, s.lo);
+  const rf    = calcRF(s.la, s.lo);
+  const ac    = calcAcScore(s.la, s.lo);
+  const wxS   = calcWx(wx);
+  const score = calcScore(wxS, terrain, rf, open, air, ac);
+  const drones = calcDrones(wx, terrain, open);
+  return { score, wx, forecast, terrain, open, air, rf, ac, wxS, drones };
 }
 
-/* ─────────────────────────────────────────────────────────
-   SPOTS LIST
-───────────────────────────────────────────────────────── */
-function renderSpotsList() {
+/* ══════════════════════════════════════════════════════════
+   RENDER — SPOTS LIST
+══════════════════════════════════════════════════════════ */
+function renderList() {
   const q   = document.getElementById('spotSearch').value.toLowerCase();
   const srt = document.getElementById('spotSort').value;
-
-  let list = spots.filter(s => !q || (s.name || '').toLowerCase().includes(q));
-  if (srt === 'score') list.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
-  if (srt === 'name')  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  if (srt === 'date')  list.sort((a, b) => b.id - a.id);
+  let list  = spots.filter(s => !q || (s.name||'').toLowerCase().includes(q));
+  if (srt==='score') list.sort((a,b) => (b.score??-1)-(a.score??-1));
+  if (srt==='name')  list.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  if (srt==='date')  list.sort((a,b) => b.id - a.id);
 
   const el = document.getElementById('spotsList');
   if (!list.length) {
-    el.innerHTML = `<div class="spots-empty">
-      ◉ No spots saved yet<br><br>
-      Click anywhere on the map<br>to add your first FPV site
-    </div>`;
-    return;
+    el.innerHTML = `<div class="spots-empty">◎ No spots saved<br><br>Click anywhere on the map<br>to add your first FPV site</div>`;
+    updateTabBadge(0); return;
   }
-
   el.innerHTML = list.map(s => {
-    const c = scoreColor(s.score);
-    const scoreStr = s.score != null ? s.score : '—';
-    return `<div class="spot-item${s.id === selectedId ? ' active' : ''}" data-id="${s.id}">
-      <div class="spot-info">
+    const c = scoreCol(s.score);
+    return `<div class="spot-row${s.id===selId?' sel':''}" data-id="${s.id}">
+      <div style="flex:1;min-width:0">
         <div class="spot-name">${esc(s.name)}</div>
-        <div class="spot-meta">
-          ${s.lat?.toFixed(4) ?? ''}, ${s.lon?.toFixed(4) ?? ''}
-          ${s.openLabel ? ' · ' + s.openLabel : ''}
-        </div>
+        <div class="spot-sub">${(s.la||0).toFixed(4)}, ${(s.lo||0).toFixed(4)}${s.openLabel?' · '+s.openLabel:''}</div>
       </div>
-      <div class="score-pill" style="border-color:${c};color:${c}">${scoreStr}</div>
+      <div class="score-ring" style="color:${c}">${s.score!=null?s.score:'—'}</div>
     </div>`;
   }).join('');
-
-  el.querySelectorAll('.spot-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const id = +el.dataset.id;
-      const sp = spots.find(s => s.id === id);
-      if (sp) map.setView([sp.lat, sp.lon], 14, { animate: true });
+  el.querySelectorAll('.spot-row').forEach(r => {
+    r.addEventListener('click', () => {
+      const id = +r.dataset.id, sp = spots.find(x => x.id===id);
+      if (sp) map.setView([sp.la, sp.lo], 14, {animate:true});
       selectSpot(id);
     });
   });
-
-  // update tab badge
-  const tab = document.querySelector('[data-tab="spots"]');
-  let badge = tab.querySelector('.tab-badge');
-  if (!badge) { badge = document.createElement('span'); badge.className = 'tab-badge'; tab.appendChild(badge); }
-  badge.textContent = spots.length;
+  updateTabBadge(spots.length);
 }
 
-/* ─────────────────────────────────────────────────────────
-   INTEL PANEL
-───────────────────────────────────────────────────────── */
-function wmoLabel(c) {
-  if (c === 0) return 'Clear sky ☀';
-  if (c <= 3)  return 'Partly cloudy ⛅';
-  if (c <= 9)  return 'Overcast ☁';
-  if (c <= 49) return 'Fog / haze 🌫';
-  if (c <= 59) return 'Drizzle 🌦';
-  if (c <= 69) return 'Rain 🌧';
-  if (c <= 79) return 'Snow ❄';
-  if (c <= 84) return 'Rain showers 🌦';
-  if (c <= 99) return 'Thunderstorm ⛈';
-  return '—';
+function updateTabBadge(n) {
+  const btn = document.querySelector('[data-tab="spots"]');
+  let ct = btn.querySelector('.tab-ct');
+  if (n === 0) { if (ct) ct.remove(); return; }
+  if (!ct) { ct = document.createElement('span'); ct.className = 'tab-ct'; btn.appendChild(ct); }
+  ct.textContent = n;
 }
-function windDir(d) {
-  return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d / 22.5) % 16];
+
+/* ══════════════════════════════════════════════════════════
+   RENDER — INTEL PANEL
+══════════════════════════════════════════════════════════ */
+const WD = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+function wdir(d) { return WD[Math.round(d/22.5)%16]; }
+function wmo(c) {
+  if (!c && c!==0) return '?';
+  if (c===0) return '☀'; if (c<=3) return '⛅'; if (c<=9) return '☁';
+  if (c<=49) return '🌫'; if (c<=59) return '🌦'; if (c<=69) return '🌧';
+  if (c<=79) return '❄'; if (c<=84) return '🌦'; if (c<=99) return '⛈';
+  return '?';
+}
+function fmt12h(isoStr) {
+  try {
+    const d = new Date(isoStr);
+    let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + (m ? ':'+String(m).padStart(2,'0') : '') + ap;
+  } catch { return ''; }
 }
 
 function showLoading() {
-  document.getElementById('intelContent').innerHTML =
-    `<div class="intel-loading"><div class="spinner"></div><span>ACQUIRING DATA…</span></div>`;
+  document.getElementById('intelBody').innerHTML =
+    `<div class="intel-loading" style="flex:1;padding:60px 20px">
+      <div class="spin"></div><div>ACQUIRING DATA…</div></div>`;
 }
 
 function renderIntel(spot, I) {
-  const { score, wx, terrain, openness, airspace, rf, adsb, wxS, drones } = I;
-  const c = scoreColor(score);
+  const { score, wx, forecast, terrain, open, air, rf, ac, wxS, drones } = I;
+  const c = scoreCol(score);
 
-  /* Air banner */
-  let airHtml;
-  if (airspace.status === 'blocked') {
-    airHtml = `<div class="air-banner air-blocked">
-      ⛔ CONTROLLED AIRSPACE — ${esc(airspace.ad.id)} ${esc(airspace.ad.name)}<br>
-      ${(airspace.dist/1000).toFixed(1)} km from centre · ATC / CAA authorisation required<br>
-      <a href="https://www.airshare.co.nz" target="_blank">→ Get authorisation at airshare.co.nz</a>
-    </div>`;
-  } else if (airspace.status === 'buffer') {
-    airHtml = `<div class="air-banner air-buffer">
-      ⚠ CTR APPROACH BUFFER — ${esc(airspace.ad.id)} ${esc(airspace.ad.name)}<br>
-      ${(airspace.dist/1000).toFixed(1)} km from boundary · Check airshare.co.nz before flying
-    </div>`;
-  } else {
-    airHtml = `<div class="air-banner air-clear">✓ AIRSPACE CLEAR — No active CTR detected at this location</div>`;
-  }
+  /* Airspace banner */
+  const airHtml = air.st === 'blocked'
+    ? `<div class="air-alert air-block">⛔ CONTROLLED — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>
+        ${(air.d/1000).toFixed(1)} km from centre · ATC / CAA authorisation required<br>
+        <a href="https://www.airshare.co.nz" target="_blank">→ airshare.co.nz</a></div>`
+    : air.st === 'buffer'
+    ? `<div class="air-alert air-warn">⚠ CTR BUFFER — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>
+        ${(air.d/1000).toFixed(1)} km from boundary · Check before flying</div>`
+    : `<div class="air-alert air-ok">✓ CLEAR — No active CTR at this location</div>`;
 
-  /* Sub-scores grid */
+  /* Scores */
   const subs = [
-    { l: 'WEATHER',   v: wxS,          c: scoreColor(wxS) },
-    { l: 'TERRAIN',   v: terrain.score, c: scoreColor(terrain.score) },
-    { l: 'RF / URBAN', v: rf,           c: scoreColor(rf) },
-    { l: 'OPENNESS',  v: openness.score,c: scoreColor(openness.score) },
+    { l:'WEATHER', v:wxS,           c:scoreCol(wxS) },
+    { l:'TERRAIN', v:terrain.score, c:scoreCol(terrain.score) },
+    { l:'OPENNESS',v:open.score,    c:scoreCol(open.score) },
+    { l:'RF',      v:rf,            c:scoreCol(rf) },
   ];
-  const subsHtml = `<div class="score-grid">
-    ${subs.map(s => `<div class="score-tile">
-      <div class="score-tile-label">${s.l}</div>
-      <div class="score-tile-val" style="color:${s.c}">${s.v}</div>
-      <div class="score-bar">
-        <div class="score-bar-fill" style="width:${s.v}%;background:${s.c}"></div>
-      </div>
-    </div>`).join('')}
-  </div>`;
+  const scoresHtml = `<div class="g2">${subs.map(s=>`
+    <div class="tile">
+      <div class="tile-lbl">${s.l}</div>
+      <div class="tile-val" style="color:${s.c}">${s.v}</div>
+      <div class="tile-bar"><div class="tile-fill" style="width:${s.v}%;background:${s.c}"></div></div>
+    </div>`).join('')}</div>`;
+
+  /* 4-hour forecast */
+  let fcHtml = '<div class="info" style="color:var(--tx3)">Forecast unavailable</div>';
+  if (forecast.length) {
+    fcHtml = `<div class="fc-strip">
+      ${forecast.map(f => {
+        const bad  = f.wind > 35 || f.rain > 2 || f.code > 60;
+        const warn = !bad && (f.wind > 20 || f.rain > 0.3 || f.code > 3);
+        const wc   = f.wind > 35 ? '#ef4444' : f.wind > 20 ? '#f59e0b' : '#10b981';
+        return `<div class="fc-hour${bad?' bad':warn?' warn':''}">
+          ${bad ? '<div class="fc-warn-tag">⚠</div>' : ''}
+          <div class="fc-time">${fmt12h(f.time)}</div>
+          <div class="fc-icon">${wmo(f.code)}</div>
+          <div class="fc-wind" style="color:${wc}">${Math.round(f.wind)}<span style="font-size:9px;opacity:.7"> km/h</span></div>
+          <div class="fc-rain">${f.rain > 0 ? f.rain.toFixed(1)+'mm' : 'Dry'}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
 
   /* Drone suitability */
   const droneHtml = `<div class="drone-grid">
-    ${drones.map(d => `<div class="drone-tile">
-      <div class="drone-name">${d.name}</div>
-      <div class="drone-spec">${d.spec}</div>
-      <div class="drone-rating">
-        <div class="drone-dots" style="color:${d.ok ? '#10b981' : '#f59e0b'}">
-          ${[1,2,3,4,5].map(i => `<div class="drone-dot${i <= d.rating ? ' filled' : ''}"></div>`).join('')}
+    ${drones.map(d => `
+      <div class="drone-card${d.blocked?' blocked':''}">
+        <div class="drone-name">${d.name}</div>
+        <div class="drone-spec">${d.spec}</div>
+        <div class="drone-stars" style="color:${
+          d.stars>=4?'#10b981':d.stars>=2?'#f59e0b':'#ef4444'
+        }">
+          ${[1,2,3,4,5].map(i=>`<div class="star${i<=d.stars?' lit':''}"></div>`).join('')}
+          <span style="font-family:var(--mono);font-size:10px;margin-left:5px;font-weight:600">${d.stars}/5</span>
         </div>
-        <span class="drone-verdict" style="color:${d.ok ? '#10b981' : '#f59e0b'}">${d.rating}/5</span>
-      </div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:2px">${esc(d.verdict)}</div>
-    </div>`).join('')}
+        <div class="drone-verdict" style="color:${d.blocked?'#f87171':d.stars>=4?'#10b981':d.stars>=2?'#f59e0b':'#f97316'}">${esc(d.verdict)}</div>
+      </div>`).join('')}
   </div>`;
 
-  /* Weather */
+  /* Current weather */
   const wxHtml = wx ? `
-    <div class="wx-grid">
-      <div class="wx-tile"><div class="wx-label">WIND</div>
-        <div class="wx-val">${Math.round(wx.wind_speed_10m)}<span class="wx-unit"> km/h</span></div></div>
-      <div class="wx-tile"><div class="wx-label">GUSTS</div>
-        <div class="wx-val">${Math.round(wx.wind_gusts_10m)}<span class="wx-unit"> km/h</span></div></div>
-      <div class="wx-tile"><div class="wx-label">DIRECTION</div>
-        <div class="wx-val">${Math.round(wx.wind_direction_10m)}°<span class="wx-unit"> ${windDir(wx.wind_direction_10m)}</span></div></div>
-      <div class="wx-tile"><div class="wx-label">RAIN</div>
-        <div class="wx-val">${wx.precipitation}<span class="wx-unit"> mm</span></div></div>
-      <div class="wx-tile"><div class="wx-label">CLOUD</div>
-        <div class="wx-val">${wx.cloud_cover}<span class="wx-unit"> %</span></div></div>
-      <div class="wx-tile"><div class="wx-label">ELEVATION</div>
-        <div class="wx-val">${terrain.elevation}<span class="wx-unit"> m</span></div></div>
+    <div class="g2">
+      <div class="tile-sm"><div class="tsm-lbl">WIND</div>
+        <div class="tsm-val">${Math.round(wx.wind_speed_10m)}<span class="tsm-u"> km/h</span></div></div>
+      <div class="tile-sm"><div class="tsm-lbl">GUSTS</div>
+        <div class="tsm-val">${Math.round(wx.wind_gusts_10m)}<span class="tsm-u"> km/h</span></div></div>
+      <div class="tile-sm"><div class="tsm-lbl">DIRECTION</div>
+        <div class="tsm-val">${Math.round(wx.wind_direction_10m)}°<span class="tsm-u"> ${wdir(wx.wind_direction_10m)}</span></div></div>
+      <div class="tile-sm"><div class="tsm-lbl">RAIN</div>
+        <div class="tsm-val">${wx.precipitation}<span class="tsm-u"> mm</span></div></div>
+      <div class="tile-sm"><div class="tsm-lbl">CLOUD</div>
+        <div class="tsm-val">${wx.cloud_cover}<span class="tsm-u"> %</span></div></div>
+      <div class="tile-sm"><div class="tsm-lbl">ELEVATION</div>
+        <div class="tsm-val">${terrain.elev}<span class="tsm-u"> m</span></div></div>
     </div>
-    <div class="info-box mono">${wmoLabel(wx.weather_code)} · Terrain Δ ±${terrain.variance} m over 1.5 km</div>
-  ` : `<div class="info-box mono">Weather data unavailable · Elevation: ${terrain.elevation} m · Terrain Δ ±${terrain.variance} m</div>`;
+    <div class="info">${wmo(wx.weather_code)} ${['Clear','Partly cloudy','Cloudy','Foggy','Drizzle','Rain','Snow','Showers','Storm',''][
+      wx.weather_code===0?0:wx.weather_code<=3?1:wx.weather_code<=9?2:wx.weather_code<=49?3:wx.weather_code<=59?4:wx.weather_code<=69?5:wx.weather_code<=79?6:wx.weather_code<=84?7:wx.weather_code<=99?8:9
+    ] || ''} · Terrain Δ ±${terrain.variance} m over 1.5 km radius</div>
+  ` : `<div class="info">Weather unavailable · Elevation: ${terrain.elev} m</div>`;
 
-  /* ADS-B section */
-  const adsbHtml = `<div class="info-box mono">
-    ${adsb.score == null
-      ? '⊙ Enable ADS-B layer on the map to score live air traffic near this spot'
-      : `${adsb.count} aircraft within 10 km · <span style="color:${adsb.low > 0 ? '#ef4444' : '#10b981'};font-weight:600">${adsb.low} below 500 m</span><br>Traffic score: <span style="color:${scoreColor(adsb.score)}">${adsb.score}/100</span>`}
-  </div>`;
-
-  /* Site analysis */
-  const siteHtml = `<div class="info-box mono">
-    Environment: <span style="color:var(--cyan);font-weight:600">${esc(openness.label)}</span>
-    ${openness.count != null ? ` (${openness.count} structures / urban features within 400 m)` : ''}<br>
-    Terrain roughness: ±${terrain.variance} m variance over 1.5 km radius<br>
-    Elevation: ${terrain.elevation} m ASL
+  /* ADS-B */
+  const acHtml = `<div class="info">
+    ${ac.score==null
+      ? '⊙ Enable ADS-B (map toolbar) to score live traffic near this spot'
+      : `${ac.n} aircraft within 10 km · <span style="color:${ac.low>0?'#ef4444':'#10b981'};font-weight:600">${ac.low} below 500 m</span><br>Traffic score: <span style="color:${scoreCol(ac.score)}">${ac.score}/100</span>`}
   </div>`;
 
   /* Tags + notes */
-  const tagsHtml = spot.tags?.length
-    ? `<div class="i-section">
-        <div class="i-label">TAGS</div>
-        <div class="tags-wrap">${spot.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      </div>` : '';
+  const tagsH = spot.tags?.length ? `<div class="sec-lbl">TAGS</div><div class="tags">${spot.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : '';
+  const noteH = spot.notes ? `<div class="sec-lbl">NOTES</div><div class="info">${esc(spot.notes)}</div>` : '';
 
-  const notesHtml = spot.notes
-    ? `<div class="i-section">
-        <div class="i-label">NOTES</div>
-        <div class="info-box">${esc(spot.notes)}</div>
-      </div>` : '';
-
-  document.getElementById('intelContent').innerHTML = `
+  document.getElementById('intelBody').innerHTML = `
     <!-- Hero -->
-    <div class="ihero-wrap">
-      <div class="i-hero">
-        <div class="i-hero-text">
-          <div class="i-name">${esc(spot.name)}</div>
-          <div class="i-coords">
-            ${spot.lat.toFixed(5)}, ${spot.lon.toFixed(5)}<br>
-            ${openness.label} · ${terrain.elevation} m ASL<br>
-            Saved ${new Date(spot.id).toLocaleDateString('en-NZ')}
-          </div>
+    <div class="hero">
+      <div class="hero-txt">
+        <div class="hero-name">${esc(spot.name)}</div>
+        <div class="hero-meta">
+          ${spot.la.toFixed(5)}, ${spot.lo.toFixed(5)}<br>
+          ${open.label} · ${terrain.elev} m ASL<br>
+          ${new Date(spot.id).toLocaleDateString('en-NZ',{day:'numeric',month:'short',year:'numeric'})}
         </div>
-        <div class="i-score-ring" style="border-color:${c};box-shadow:0 0 16px ${c}35">
-          <div class="i-score-num" style="color:${c}">${score}</div>
-          <div class="i-score-lbl" style="color:${c}">SCORE</div>
-        </div>
+      </div>
+      <div class="big-ring" style="border-color:${c};box-shadow:0 0 16px ${c}32">
+        <div class="big-num" style="color:${c}">${score}</div>
+        <div class="big-lbl" style="color:${c}">SCORE</div>
       </div>
     </div>
 
     <!-- Airspace -->
-    <div class="i-section">
-      <div class="i-label">AIRSPACE</div>
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">AIRSPACE</div>
       ${airHtml}
     </div>
 
-    <!-- Scores -->
-    <div class="i-section">
-      <div class="i-label">COMPONENT SCORES</div>
-      ${subsHtml}
+    <!-- Component scores -->
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">COMPONENT SCORES</div>
+      ${scoresHtml}
     </div>
 
     <!-- Drone suitability -->
-    <div class="i-section">
-      <div class="i-label">DRONE SUITABILITY</div>
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">DRONE SUITABILITY</div>
       ${droneHtml}
     </div>
 
-    <!-- ADS-B -->
-    <div class="i-section">
-      <div class="i-label">ADS-B TRAFFIC (10 km)</div>
-      ${adsbHtml}
+    <!-- 4-Hour Forecast -->
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">4-HOUR FORECAST</div>
+      ${fcHtml}
     </div>
 
-    <!-- Weather -->
-    <div class="i-section">
-      <div class="i-label">CURRENT CONDITIONS</div>
+    <!-- Current weather -->
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">CURRENT CONDITIONS</div>
       ${wxHtml}
     </div>
 
-    <!-- Site analysis -->
-    <div class="i-section">
-      <div class="i-label">SITE ANALYSIS (AUTO)</div>
-      ${siteHtml}
+    <!-- ADS-B -->
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">ADS-B TRAFFIC (10 km)</div>
+      ${acHtml}
     </div>
 
-    ${tagsHtml}
-    ${notesHtml}
-
-    <!-- Actions -->
-    <div class="i-section">
-      <div class="action-row">
-        <button class="btn-action" id="btnAirshare">↗ Airshare NZ</button>
-        <button class="btn-action" id="btnReeval">↻ Re-evaluate</button>
-        <button class="btn-del" id="btnDel">⊗ Delete</button>
+    <!-- Site analysis -->
+    <div>
+      <div class="sec-lbl" style="margin-bottom:6px">SITE ANALYSIS (AUTO)</div>
+      <div class="info">
+        Environment: <span style="color:var(--acc);font-weight:600">${esc(open.label)}</span>${open.n!=null?' ('+open.n+' structures / urban features within 400 m)':''}<br>
+        Terrain roughness: ±${terrain.variance} m variance · ${terrain.elev} m ASL
       </div>
     </div>
 
-    <div style="font-family:var(--mono);font-size:8.5px;color:var(--tx3);line-height:1.8;padding:2px 0 6px">
-      Scores: Weather 28% · Openness 24% · Terrain 17% · RF 12% · Airspace 9% · ADS-B 10%<br>
-      ⚠ Airspace zones approximate — always verify on airshare.co.nz + check NOTAM
-    </div>
-  `;
+    ${tagsH ? '<div>'+tagsH+'</div>' : ''}
+    ${noteH ? '<div>'+noteH+'</div>' : ''}
 
-  document.getElementById('btnAirshare').addEventListener('click', () =>
-    window.open(`https://www.airshare.co.nz/interactive-map?lat=${spot.lat}&lng=${spot.lon}&zoom=14`, '_blank')
-  );
-  document.getElementById('btnReeval').addEventListener('click', () => selectSpot(spot.id));
-  document.getElementById('btnDel').addEventListener('click', () => {
+    <!-- Actions -->
+    <div>
+      <div class="act-row">
+        <button class="abtn" id="btnAS">↗ Airshare NZ</button>
+        <button class="abtn" id="btnRe">↻ Re-evaluate</button>
+        <button class="abtn-del" id="btnDel">⊗ Delete</button>
+      </div>
+    </div>
+
+    <div class="fine">
+      Composite: Weather 28% · Openness 24% · Terrain 17% · Airspace 9% · RF 12% · ADS-B 10%<br>
+      ⚠ Airspace zones approximate — always verify airshare.co.nz + check NOTAM/AIP before flying
+    </div>`;
+
+  document.getElementById('btnAS').onclick  = () => window.open(`https://www.airshare.co.nz/interactive-map?lat=${spot.la}&lng=${spot.lo}&zoom=13`,'_blank');
+  document.getElementById('btnRe').onclick  = () => selectSpot(spot.id);
+  document.getElementById('btnDel').onclick = () => {
     if (!confirm(`Delete "${spot.name}"?`)) return;
-    deleteSpot(spot.id);
-    selectedId = null;
-    redrawMarkers();
-    renderSpotsList();
+    remove(spot.id);
+    if (mCache[spot.id]) map.removeLayer(mCache[spot.id]);
+    delete mCache[spot.id];
+    selId = null;
+    renderList();
     switchTab('spots');
-    document.getElementById('intelContent').innerHTML =
-      `<div class="intel-empty"><span style="font-size:28px">◉</span>Select a spot to load intelligence</div>`;
-  });
+    document.getElementById('intelBody').innerHTML =
+      `<div class="intel-empty"><span style="font-size:30px;opacity:.4">◎</span>Select a spot marker<br>to load site intelligence</div>`;
+  };
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    SELECT SPOT
-───────────────────────────────────────────────────────── */
+══════════════════════════════════════════════════════════ */
 async function selectSpot(id) {
-  selectedId = id;
+  selId = id;
   const spot = spots.find(s => s.id === id);
   if (!spot) return;
-
   switchTab('intel');
   showLoading();
   redrawMarkers();
-  renderSpotsList();
+  renderList();
 
-  const intel = await evalSpot(spot);
-  spot.score    = intel.score;
-  spot.openLabel = intel.openness.label;
-  upsertSpot(spot);
+  const I = await evalSpot(spot);
+  spot.score     = I.score;
+  spot.openLabel = I.open.label;
+  upsert(spot);
 
-  renderIntel(spot, intel);
+  renderIntel(spot, I);
   redrawMarkers();
-  renderSpotsList();
+  renderList();
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    ADD SPOT
-───────────────────────────────────────────────────────── */
-let previewMarker = null;
+══════════════════════════════════════════════════════════ */
+let prevM = null;
 
-async function reverseGeocode(lat, lon) {
+async function revGeo(la, lo) {
   try {
     const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=14`,
       { headers: { 'Accept-Language': 'en' } }
     );
     const d = await r.json();
     const a = d.address || {};
-    const parts = [
-      a.suburb || a.village || a.town || a.locality || '',
-      a.city || a.region || a.state || ''
-    ].filter(Boolean);
-    return parts.join(', ');
+    return [a.suburb||a.village||a.town||a.locality||'', a.city||a.region||a.state||''].filter(Boolean).join(', ');
   } catch { return ''; }
 }
 
 map.on('click', async e => {
-  const { lat, lng } = e.latlng;
-  document.getElementById('fLat').value = lat.toFixed(6);
-  document.getElementById('fLon').value = lng.toFixed(6);
-
-  if (previewMarker) map.removeLayer(previewMarker);
-  previewMarker = L.marker([lat, lng], {
+  const { lat: la, lng: lo } = e.latlng;
+  document.getElementById('fLat').value = la.toFixed(6);
+  document.getElementById('fLon').value = lo.toFixed(6);
+  if (prevM) map.removeLayer(prevM);
+  prevM = L.marker([la, lo], {
     icon: L.divIcon({
       className: '',
-      html: `<div style="
-        width:14px;height:14px;border-radius:50%;
-        background:#22d3ee;border:2px solid #fff;
-        box-shadow:0 0 10px #22d3ee80;
-      "></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
+      html: `<div style="width:13px;height:13px;border-radius:50%;
+        background:var(--acc,#38bdf8);border:2px solid #fff;
+        box-shadow:0 0 8px var(--acc,#38bdf8)80"></div>`,
+      iconSize: [13,13], iconAnchor: [6,6]
     })
   }).addTo(map);
-
   switchTab('add');
   document.getElementById('addHint').textContent =
-    `◉ Placed at ${lat.toFixed(4)}, ${lng.toFixed(4)} — enter a name and tap ADD`;
+    `◉ Placed at ${la.toFixed(4)}, ${lo.toFixed(4)} — name the spot and tap ADD`;
   document.getElementById('fName').focus();
-
-  const suggested = await reverseGeocode(lat, lng);
-  if (suggested && !document.getElementById('fName').value) {
-    document.getElementById('fName').placeholder = suggested;
-  }
+  const sug = await revGeo(la, lo);
+  if (sug && !document.getElementById('fName').value)
+    document.getElementById('fName').placeholder = sug;
 });
 
 document.getElementById('btnAdd').addEventListener('click', () => {
-  const nameEl = document.getElementById('fName');
-  const name = nameEl.value.trim() || nameEl.placeholder;
-  const lat  = parseFloat(document.getElementById('fLat').value);
-  const lon  = parseFloat(document.getElementById('fLon').value);
+  const ne  = document.getElementById('fName');
+  const name = (ne.value.trim() || ne.placeholder || '').replace(/^Auto-suggest.*/i, '').trim();
+  const la  = parseFloat(document.getElementById('fLat').value);
+  const lo  = parseFloat(document.getElementById('fLon').value);
 
-  if (!name || name.startsWith('Auto-suggests') || name.startsWith('e.g.')) {
-    alert('Please enter a name for this spot, or click the map to get a suggestion.'); return;
-  }
-  if (isNaN(lat) || isNaN(lon)) {
-    alert('Click the map to set a location first.'); return;
-  }
+  if (!name) { alert('Enter a spot name — or click the map and wait for the auto-suggestion.'); return; }
+  if (isNaN(la) || isNaN(lo)) { alert('Click the map to set a location first.'); return; }
 
   const spot = {
     id: Date.now(), name,
-    lat: +lat.toFixed(7), lon: +lon.toFixed(7),
-    tags: document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean),
+    la: +la.toFixed(7), lo: +lo.toFixed(7),
+    tags: document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean),
     notes: document.getElementById('fNotes').value.trim(),
     score: undefined, openLabel: undefined,
   };
 
-  // Reset form
   ['fName','fTags','fNotes'].forEach(id => {
     const el = document.getElementById(id);
     el.value = '';
-    if (id === 'fName') el.placeholder = 'Auto-suggests when you click the map…';
+    if (id==='fName') el.placeholder = 'Name auto-suggested when you click the map…';
   });
   document.getElementById('fLat').value = document.getElementById('fLon').value = '';
-  document.getElementById('addHint').textContent =
-    '◎ Click anywhere on the map to drop a pin — coordinates auto-fill below';
+  document.getElementById('addHint').textContent = '◎ Click the map to drop a pin — coordinates auto-fill and location name is suggested';
+  if (prevM) { map.removeLayer(prevM); prevM = null; }
 
-  if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
-
-  upsertSpot(spot);
+  upsert(spot);
   selectSpot(spot.id);
 });
 
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    TAB SWITCHING
-───────────────────────────────────────────────────────── */
+══════════════════════════════════════════════════════════ */
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.tab === name)
-  );
-  document.querySelectorAll('.tab-panel').forEach(p =>
-    p.classList.toggle('active', p.id === `panel-${name}`)
-  );
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`));
 }
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    switchTab(btn.dataset.tab);
-    if (btn.dataset.tab === 'spots') renderSpotsList();
+document.querySelectorAll('.tab-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    switchTab(b.dataset.tab);
+    if (b.dataset.tab === 'spots') renderList();
   });
 });
+document.getElementById('spotSearch').addEventListener('input', renderList);
+document.getElementById('spotSort').addEventListener('change', renderList);
 
-document.getElementById('spotSearch').addEventListener('input', renderSpotsList);
-document.getElementById('spotSort').addEventListener('change', renderSpotsList);
-
-/* ─────────────────────────────────────────────────────────
-   UTILITIES
-───────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════ */
 function esc(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════
    BOOT
-───────────────────────────────────────────────────────── */
+══════════════════════════════════════════════════════════ */
 redrawMarkers();
-renderSpotsList();
+renderList();
 
-// Sync tile layer with saved theme
-const initTheme = localStorage.getItem(themeKey);
-if (initTheme) {
-  const wantTile = initTheme === 'light' ? 'light' : 'dark';
-  if (wantTile !== currentLayerKey) switchTileLayer(wantTile);
-}
+// Sync initial tile to saved theme without flashing the dropdown
+const savedTheme = localStorage.getItem(THEME_KEY);
+if (savedTheme === 'light' && curTile !== 'light') switchTile('light');
+else if (savedTheme === 'dark'  && curTile !== 'dark')  switchTile('dark');
 </script>
 </body>
 </html>
