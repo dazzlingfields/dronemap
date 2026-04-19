@@ -3,39 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NZ FPV · Site Intelligence</title>
+<title>Drone Flight Planner · NZ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@300;400;500;600;700&family=Overpass+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-/* ══════════════════════════════════════════════════════════
-   TOKENS
-══════════════════════════════════════════════════════════ */
-:root {
-  --sans:'Overpass',sans-serif;
-  --mono:'Overpass Mono',monospace;
-  --r:8px; --r-s:5px;
-}
+:root { --sans:'Overpass',sans-serif; --mono:'Overpass Mono',monospace; --r:8px; --r-s:5px; }
+
 [data-theme="dark"] {
-  --bg:#07121f; --bg2:#0b1929; --bg3:#0e1f33; --bg4:#11243d; --bg5:#162c49;
-  --bd:#1c3452; --bd2:#254a72;
-  --tx:#c4ddf5; --tx2:#587fa0; --tx3:#294460;
+  --bg:#06101c; --bg2:#0a1826; --bg3:#0e1f33; --bg4:#112540; --bg5:#15304f;
+  --bd:#1b3352; --bd2:#254d78;
+  --tx:#c4ddf5; --tx2:#507a9c; --tx3:#254462;
   --acc:#38bdf8; --acc2:#0ea5e9;
-  --glw:#38bdf814; --glw2:#38bdf822;
-  --sh:0 8px 40px #00000080; --sh-s:0 2px 12px #00000060;
-  --stripe:rgba(255,255,255,.018);
+  --glw:#38bdf812; --glw2:#38bdf820;
+  --sh:0 8px 40px #00000085; --sh-s:0 2px 12px #00000065;
 }
 [data-theme="light"] {
-  --bg:#eaf2f9; --bg2:#ffffff; --bg3:#f4f8fd; --bg4:#eaf2fb; --bg5:#ddeaf6;
-  --bd:#c0d5e8; --bd2:#98bad2;
-  --tx:#08192c; --tx2:#3b658a; --tx3:#a8cae0;
+  --bg:#e8f2fb; --bg2:#ffffff; --bg3:#f2f8fd; --bg4:#e8f3fb; --bg5:#d8eaf8;
+  --bd:#bcd4e8; --bd2:#95bdd6;
+  --tx:#071829; --tx2:#2f607e; --tx3:#9dbdd6;
   --acc:#0369a1; --acc2:#0284c7;
-  --glw:#036aa114; --glw2:#036aa122;
-  --sh:0 4px 20px #00000014; --sh-s:0 2px 8px #0000000f;
-  --stripe:rgba(0,0,0,.015);
+  --glw:#036aa112; --glw2:#036aa11e;
+  --sh:0 4px 20px #00000014; --sh-s:0 2px 8px #0000000e;
 }
 
-/* ════ BASE ════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{display:flex;font-family:var(--sans);font-size:14px;background:var(--bg);color:var(--tx);transition:background .2s,color .2s}
@@ -44,168 +35,91 @@ a:hover{text-decoration:underline}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 
-/* ════ SIDEBAR ══════════════════════════════════════════════ */
-.sb{
-  width:348px;min-width:348px;display:flex;flex-direction:column;
-  background:var(--bg2);border-right:1px solid var(--bd);
-  box-shadow:var(--sh);z-index:100;position:relative;
-  transition:background .2s,border-color .2s;
-}
+/* ── SIDEBAR ── */
+.sb{width:346px;min-width:346px;display:flex;flex-direction:column;background:var(--bg2);border-right:1px solid var(--bd);box-shadow:var(--sh);z-index:100;transition:background .2s,border-color .2s}
 
-/* Header */
-.sb-head{
-  display:flex;align-items:center;gap:10px;padding:0 14px;
-  height:44px;background:var(--bg3);border-bottom:1px solid var(--bd);flex-shrink:0;
-}
-.logo{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
-.logo-badge{
-  width:30px;height:30px;flex-shrink:0;border-radius:6px;
-  border:1.5px solid var(--acc);background:var(--glw);
-  display:flex;align-items:center;justify-content:center;font-size:15px;
-  box-shadow:0 0 8px var(--glw2);
-}
-.logo-name{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:2.5px;color:var(--tx);line-height:1}
-.logo-ver{font-family:var(--mono);font-size:8px;color:var(--tx2);letter-spacing:1px;margin-top:3px}
-.hbtn{
-  width:28px;height:28px;border-radius:var(--r-s);border:1px solid var(--bd);
-  background:transparent;color:var(--tx2);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:14px;
-  transition:all .14s;flex-shrink:0;
-}
-.hbtn:hover{border-color:var(--bd2);color:var(--acc);background:var(--glw)}
+.sb-head{display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;background:var(--bg3);border-bottom:1px solid var(--bd);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.logo-badge{width:32px;height:32px;flex-shrink:0;border-radius:6px;border:1.5px solid var(--acc);background:var(--glw);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 8px var(--glw2)}
+.logo-name{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:2px;color:var(--tx);line-height:1.2}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--tx2);letter-spacing:1px;margin-top:2px}
+.hbtn{width:28px;height:28px;border-radius:var(--r-s);border:1px solid var(--bd);background:transparent;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .14s;flex-shrink:0}
+.hbtn:hover{border-color:var(--acc);color:var(--acc);background:var(--glw)}
 
-/* Tabs */
-.sb-nav{
-  display:grid;grid-template-columns:1fr 1fr 1fr;
-  border-bottom:1px solid var(--bd);flex-shrink:0;
-}
-.nav-btn{
-  padding:9px 6px;background:transparent;border:none;
-  border-right:1px solid var(--bd);color:var(--tx2);
-  font-family:var(--mono);font-size:10px;letter-spacing:2px;
-  cursor:pointer;transition:all .14s;position:relative;
-}
+.sb-nav{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--bd);flex-shrink:0}
+.nav-btn{padding:9px 6px;background:transparent;border:none;border-right:1px solid var(--bd);color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;transition:all .14s;position:relative}
 .nav-btn:last-child{border-right:none}
 .nav-btn:hover{background:var(--bg3);color:var(--tx)}
 .nav-btn.active{background:var(--bg4);color:var(--acc)}
 .nav-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--acc)}
-.nav-ct{
-  display:inline-block;min-width:15px;height:15px;border-radius:8px;
-  background:var(--acc);color:#fff;font-size:8px;font-weight:600;
-  line-height:15px;text-align:center;padding:0 4px;margin-left:4px;vertical-align:middle;
-}
+.nav-ct{display:inline-block;min-width:15px;height:15px;border-radius:8px;background:var(--acc);color:#fff;font-size:8px;font-weight:600;line-height:15px;text-align:center;padding:0 4px;margin-left:4px;vertical-align:middle}
 
-/* Panels */
 .panel{display:none;flex:1;flex-direction:column;overflow:hidden}
 .panel.active{display:flex}
 
-/* ════ SPOTS PANEL ══════════════════════════════════════════ */
+/* ── SPOTS ── */
 .spots-bar{display:flex;gap:7px;padding:10px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
 .s-wrap{flex:1;position:relative}
 .s-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--tx3);pointer-events:none}
-.s-in{
-  width:100%;padding:8px 10px 8px 30px;
-  background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-s);
-  color:var(--tx);font-family:var(--sans);font-size:13px;transition:border-color .14s;
-}
+.s-in{width:100%;padding:8px 10px 8px 30px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-s);color:var(--tx);font-family:var(--sans);font-size:13px;transition:border-color .14s}
 .s-in:focus{outline:none;border-color:var(--acc)}
 .s-in::placeholder{color:var(--tx3)}
-.s-sort{
-  padding:8px 10px;background:var(--bg);border:1px solid var(--bd);
-  border-radius:var(--r-s);color:var(--tx2);font-family:var(--mono);font-size:10px;
-  cursor:pointer;min-width:80px;
-}
+.s-sort{padding:8px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-s);color:var(--tx2);font-family:var(--mono);font-size:10px;cursor:pointer;min-width:80px}
 .s-sort:focus{outline:none}
 .s-sort option{background:var(--bg2)}
-
 .spots-scroll{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
-.spot-row{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;
-  background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);
-  cursor:pointer;transition:all .14s;
-}
+.spot-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;transition:all .14s}
 .spot-row:hover{border-color:var(--bd2);background:var(--bg4)}
 .spot-row.sel{border-color:var(--acc);background:var(--glw)}
 .spot-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .spot-sub{font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:3px;line-height:1.5}
-.score-ring{
-  flex-shrink:0;width:36px;height:36px;border-radius:50%;
-  border:1.5px solid currentColor;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:11px;font-weight:600;
-}
-.spots-empty{padding:48px 20px;text-align:center;color:var(--tx2);font-family:var(--mono);font-size:11px;line-height:2.4}
-.sb-foot{
-  padding:6px 12px;border-top:1px solid var(--bd);
-  font-family:var(--mono);font-size:9px;color:var(--tx3);
-  display:flex;align-items:center;gap:7px;flex-shrink:0;
-}
+.score-ring{flex-shrink:0;width:36px;height:36px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600}
+.spots-empty{padding:48px 20px;text-align:center;color:var(--tx2);font-family:var(--mono);font-size:11px;line-height:2.5}
+.sb-foot{padding:6px 12px;border-top:1px solid var(--bd);font-family:var(--mono);font-size:9px;color:var(--tx3);display:flex;align-items:center;gap:7px;flex-shrink:0}
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex-shrink:0}
 .sdot.ok{background:#10b981;box-shadow:0 0 5px #10b981}
 
-/* ════ ADD PANEL ════════════════════════════════════════════ */
+/* ── ADD ── */
 .add-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.hint{
-  background:var(--bg3);border:1px solid var(--bd);border-left:3px solid var(--acc);
-  border-radius:var(--r-s);padding:9px 12px;font-family:var(--mono);font-size:10px;
-  color:var(--tx2);line-height:1.7;
-}
+.hint{background:var(--bg3);border:1px solid var(--bd);border-left:3px solid var(--acc);border-radius:var(--r-s);padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--tx2);line-height:1.7}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--tx2);font-weight:600}
-.fi,.fta{
-  padding:9px 11px;background:var(--bg);border:1px solid var(--bd);
-  border-radius:var(--r-s);color:var(--tx);font-family:var(--sans);font-size:13px;
-  width:100%;transition:border-color .14s;
-}
+.fi,.fta{padding:9px 11px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-s);color:var(--tx);font-family:var(--sans);font-size:13px;width:100%;transition:border-color .14s}
 .fi:focus,.fta:focus{outline:none;border-color:var(--acc)}
 .fi::placeholder,.fta::placeholder{color:var(--tx3);font-size:12px}
 .fta{resize:vertical;min-height:66px}
-.btn-add{
-  padding:11px;background:var(--acc);color:#fff;border:none;border-radius:var(--r);
-  font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:2px;
-  cursor:pointer;transition:all .18s;box-shadow:0 0 14px var(--glw2);
-}
+.btn-add{padding:11px;background:var(--acc);color:#fff;border:none;border-radius:var(--r);font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .18s;box-shadow:0 0 14px var(--glw2)}
 .btn-add:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .btn-add:active{transform:none;filter:none}
 .add-note{font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;line-height:1.9}
 
-/* ════ INTEL PANEL ══════════════════════════════════════════ */
+/* ── INTEL ── */
 .intel-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.intel-empty{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:var(--tx2);font-family:var(--mono);font-size:11px;text-align:center;line-height:2.5;padding:40px 20px;
-}
-.intel-load{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:14px;color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:1px;
-}
+.intel-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tx2);font-family:var(--mono);font-size:11px;text-align:center;line-height:2.5;padding:40px 20px}
+.intel-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:1px}
 .spin{width:28px;height:28px;border-radius:50%;border:2px solid var(--bd2);border-top-color:var(--acc);animation:spin .75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 .sec{display:flex;flex-direction:column;gap:6px}
 .sec-hd{font-family:var(--mono);font-size:9px;letter-spacing:2.5px;color:var(--tx2);border-bottom:1px solid var(--bd);padding-bottom:5px}
 
-/* Hero card */
 .hero{display:flex;align-items:flex-start;gap:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:12px}
 .hero-txt{flex:1;min-width:0}
-.hero-name{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--tx);line-height:1.2;letter-spacing:.3px}
+.hero-name{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--tx);line-height:1.2}
 .hero-meta{font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.9}
 .big-ring{flex-shrink:0;width:58px;height:58px;border-radius:50%;border:2.5px solid;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .big-num{font-family:var(--mono);font-size:20px;font-weight:600;line-height:1}
 .big-lbl{font-family:var(--mono);font-size:7px;letter-spacing:1.5px;margin-top:1px;opacity:.75}
 
-/* Alerts */
 .alert{border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:10px;line-height:1.7}
 .alert-ok  {background:#10b98110;border:1px solid #10b98130;color:#10b981}
 .alert-warn{background:#f59e0b0d;border:1px solid #f59e0b38;color:#f59e0b}
 .alert-blk {background:#a855f70e;border:1px solid #a855f745;color:#c084fc}
 
-/* Grids */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 
-/* Tiles */
 .tile{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:9px 11px}
 .t-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:.8px;margin-bottom:5px}
 .t-val{font-family:var(--mono);font-size:20px;font-weight:600;line-height:1}
@@ -222,15 +136,11 @@ a:hover{text-decoration:underline}
 .fc-cell{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:8px 5px;text-align:center;position:relative}
 .fc-cell.bad{border-color:#ef444450;background:#ef44440a}
 .fc-cell.warn{border-color:#f59e0b40;background:#f59e0b08}
-.fc-time{font-family:var(--mono);font-size:9px;color:var(--tx2);letter-spacing:1px}
-.fc-ico{font-size:16px;margin:4px 0}
+.fc-time{font-family:var(--mono);font-size:9px;color:var(--tx2)}
+.fc-ico{font-size:17px;margin:4px 0}
 .fc-wind{font-family:var(--mono);font-size:11px;font-weight:600;line-height:1.2}
 .fc-rain{font-family:var(--mono);font-size:9px;color:var(--tx2);margin-top:2px}
-.fc-badge{
-  position:absolute;top:-1px;right:-1px;
-  background:#ef4444;color:#fff;border-radius:0 var(--r) 0 4px;
-  font-size:7px;font-family:var(--mono);padding:1px 4px;
-}
+.fc-badge{position:absolute;top:-1px;right:-1px;background:#ef4444;color:#fff;border-radius:0 var(--r) 0 4px;font-size:7px;font-family:var(--mono);padding:1px 4px}
 
 /* Drone cards */
 .drone-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -243,7 +153,13 @@ a:hover{text-decoration:underline}
 .star.lit{background:currentColor}
 .dc-verdict{font-family:var(--mono);font-size:9px;margin-top:3px;line-height:1.4}
 
-/* Info box */
+/* Prevailing wind */
+.wind-card{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;gap:14px}
+.wind-compass{flex-shrink:0;width:54px;height:54px;border-radius:50%;border:1.5px solid var(--bd2);display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg4)}
+.wind-arrow-svg{transition:transform .4s ease}
+.wind-stats{flex:1;font-family:var(--mono);font-size:10px;color:var(--tx2);line-height:1.9}
+.wind-val{color:var(--acc);font-weight:600}
+
 .info{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--tx2);line-height:1.75}
 .tags-wrap{display:flex;flex-wrap:wrap;gap:4px}
 .tag{background:var(--bg5);border:1px solid var(--bd);border-radius:4px;padding:2px 8px;font-family:var(--mono);font-size:9.5px;color:var(--tx2)}
@@ -255,85 +171,72 @@ a:hover{text-decoration:underline}
 .abtn-del:hover{background:#ef44440c;border-color:#ef4444;color:#ef4444}
 .fine{font-family:var(--mono);font-size:8px;color:var(--tx3);line-height:1.8;padding-bottom:2px}
 
-/* ════ MAP AREA ══════════════════════════════════════════════ */
+/* refresh notice */
+.refresh-bar{display:flex;align-items:center;gap:7px;padding:6px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r-s);font-family:var(--mono);font-size:9px;color:var(--tx3)}
+.rdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--acc);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MAP AREA ── */
 .map-area{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── Toolbar strip — sits ABOVE map, so dropdown is never clipped ── */
+/* Toolbar above the map */
 .map-tb{
-  height:44px;flex-shrink:0;
-  display:flex;align-items:center;gap:2px;padding:0 8px;
+  height:44px;flex-shrink:0;display:flex;align-items:center;gap:2px;padding:0 8px;
   background:var(--bg2);border-bottom:1px solid var(--bd);
-  position:relative;   /* dropdown anchors to this */
-  z-index:200;         /* above map, below sidebar */
-  overflow:visible;    /* critical — let dropdown spill down */
+  position:relative;z-index:200;overflow:visible;
 }
-
 .tb-btn{
-  height:30px;padding:0 10px;border-radius:var(--r-s);
-  border:1px solid transparent;background:transparent;
-  color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:1px;
-  cursor:pointer;transition:all .14s;
-  display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;
+  height:30px;padding:0 10px;border-radius:var(--r-s);border:1px solid transparent;
+  background:transparent;color:var(--tx2);font-family:var(--mono);font-size:10px;letter-spacing:1px;
+  cursor:pointer;transition:all .14s;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;
 }
 .tb-btn:hover{border-color:var(--bd);background:var(--bg3);color:var(--tx)}
 .tb-btn.on{border-color:var(--acc);background:var(--glw);color:var(--acc)}
 .tb-btn svg{flex-shrink:0;width:14px;height:14px}
+.tb-sep{width:1px;height:22px;background:var(--bd);margin:0 4px;flex-shrink:0}
 
-/* Layer dropdown — drops below toolbar, never inside #map */
+/* Layer dropdown */
 .layer-drop{
-  display:none;
-  position:absolute;top:100%;left:8px;
+  display:none;position:absolute;top:100%;left:8px;
   background:var(--bg2);border:1px solid var(--bd);border-top:none;
   border-radius:0 0 var(--r) var(--r);
-  box-shadow:0 8px 24px #00000050;
-  min-width:148px;z-index:300;overflow:hidden;
+  box-shadow:0 8px 24px #00000055;min-width:148px;z-index:300;overflow:hidden;
 }
 .layer-drop.open{display:block}
-.ld-hd{
-  padding:5px 12px;font-family:var(--mono);font-size:8px;letter-spacing:2px;
-  color:var(--tx2);background:var(--bg3);border-bottom:1px solid var(--bd);
-}
-.ld-item{
-  display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;
-  font-size:12.5px;font-family:var(--mono);color:var(--tx2);
-  transition:all .12s;border-bottom:1px solid var(--bd);
-}
+.ld-hd{padding:5px 12px;font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--tx2);background:var(--bg3);border-bottom:1px solid var(--bd)}
+.ld-item{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;font-size:12.5px;font-family:var(--mono);color:var(--tx2);transition:all .12s;border-bottom:1px solid var(--bd)}
 .ld-item:last-child{border-bottom:none}
 .ld-item:hover{background:var(--bg3);color:var(--tx)}
 .ld-item.active{background:var(--glw);color:var(--acc)}
 .ld-dot{width:9px;height:9px;border-radius:50%;border:2px solid currentColor;flex-shrink:0}
 
-.tb-sep{width:1px;height:22px;background:var(--bd);margin:0 4px;flex-shrink:0}
-.tb-center{flex:1;display:flex;align-items:center;justify-content:center;gap:14px;overflow:hidden}
-.tb-stat{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--tx3);white-space:nowrap}
-.tdot{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex-shrink:0}
-.tdot.green{background:#10b981;box-shadow:0 0 4px #10b981}
-.tdot.amber{background:#f59e0b}
-.tdot.red{background:#ef4444;box-shadow:0 0 4px #ef4444}
+/* ADS-B status in toolbar centre */
+.tb-center{flex:1;display:flex;align-items:center;justify-content:center;gap:12px;overflow:hidden;font-family:var(--mono);font-size:9px}
+.tb-stat-chip{display:flex;align-items:center;gap:5px;color:var(--tx3);white-space:nowrap}
+.ch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--tx3)}
+.ch-dot.grn{background:#10b981;box-shadow:0 0 4px #10b981}
+.ch-dot.amb{background:#f59e0b}
+.ch-dot.red{background:#ef4444;box-shadow:0 0 4px #ef4444}
 
 /* Map itself */
-#map{flex:1;min-width:0;overflow:hidden}
+#map{flex:1;min-width:0;overflow:hidden;position:relative}
 
-/* Map legend — inside #map, bottom-left */
-.map-legend{
-  position:absolute;bottom:26px;left:10px;z-index:50;
-  background:var(--bg2);border:1px solid var(--bd);
-  border-radius:var(--r);box-shadow:var(--sh-s);overflow:hidden;
-  display:none; /* toggled by JS */
-}
+/* Map legend */
+.map-legend{position:absolute;bottom:28px;left:10px;z-index:50;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh-s);overflow:hidden;display:none}
 .map-legend.open{display:block}
-.leg-hd{
-  padding:5px 10px;font-family:var(--mono);font-size:8px;letter-spacing:2px;
-  color:var(--tx2);background:var(--bg3);border-bottom:1px solid var(--bd);
-}
-.leg-row{
-  display:flex;align-items:center;gap:7px;padding:5px 10px;
-  font-family:var(--mono);font-size:9px;color:var(--tx2);border-bottom:1px solid var(--bd);
-}
+.leg-hd{padding:5px 10px;font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--tx2);background:var(--bg3);border-bottom:1px solid var(--bd)}
+.leg-row{display:flex;align-items:center;gap:7px;padding:5px 10px;font-family:var(--mono);font-size:9px;color:var(--tx2);border-bottom:1px solid var(--bd)}
 .leg-row:last-child{border-bottom:none}
 .leg-sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-/* Leaflet overrides */
+/* Wind markers on map */
+.wm{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer}
+.wm-arrow{display:flex;align-items:center;justify-content:center;transition:transform .5s ease}
+.wm-spd{font-family:'Overpass Mono',monospace;font-size:9px;font-weight:600;white-space:nowrap;line-height:1;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.55);color:#fff}
+.wm-city{font-family:'Overpass Mono',monospace;font-size:8px;color:var(--tx2);white-space:nowrap;line-height:1;margin-top:1px}
+@keyframes acpulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Leaflet theme */
 .leaflet-popup-content-wrapper{background:var(--bg2)!important;color:var(--tx)!important;border:1px solid var(--bd)!important;border-radius:var(--r)!important;box-shadow:var(--sh)!important;font-family:var(--sans)!important}
 .leaflet-popup-tip{background:var(--bg2)!important}
 .leaflet-popup-close-button{color:var(--tx2)!important}
@@ -341,10 +244,6 @@ a:hover{text-decoration:underline}
 .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--acc)!important}
 .leaflet-bar{border:none!important;box-shadow:var(--sh-s)!important}
 
-/* Aircraft */
-@keyframes acpulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* Responsive */
 @media(max-width:700px){
   body{flex-direction:column}
   .sb{width:100%;min-width:0;height:44vh;border-right:none;border-bottom:1px solid var(--bd)}
@@ -354,17 +253,13 @@ a:hover{text-decoration:underline}
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════
-     SIDEBAR
-════════════════════════════════════════════════════════ -->
 <aside class="sb">
-
   <div class="sb-head">
     <div class="logo">
-      <div class="logo-badge">🛸</div>
+      <div class="logo-badge">🚁</div>
       <div>
-        <div class="logo-name">NZ FPV INTEL</div>
-        <div class="logo-ver">SITE PLANNING · V5.0</div>
+        <div class="logo-name">DRONE FLIGHT PLANNER</div>
+        <div class="logo-sub">NZ · FPV SITE INTELLIGENCE</div>
       </div>
     </div>
     <button class="hbtn" id="themeBtn" title="Toggle light / dark">◑</button>
@@ -399,27 +294,21 @@ a:hover{text-decoration:underline}
   <!-- ADD -->
   <div class="panel" id="panel-add">
     <div class="add-body">
-      <div class="hint" id="addHint">◎ Click the map to drop a pin — coordinates fill automatically and location name is suggested</div>
-      <div class="fg">
-        <div class="fl">DESIGNATION</div>
-        <input class="fi" id="fName" placeholder="Auto-suggested when you click the map…">
-      </div>
+      <div class="hint" id="addHint">◎ Click anywhere on the map — coords fill automatically and a name is suggested from the location</div>
+      <div class="fg"><div class="fl">DESIGNATION</div>
+        <input class="fi" id="fName" placeholder="Auto-suggested when you click the map…"></div>
       <div class="fr">
         <div class="fg"><div class="fl">LATITUDE</div><input class="fi" id="fLat" placeholder="-41.2865"></div>
         <div class="fg"><div class="fl">LONGITUDE</div><input class="fi" id="fLon" placeholder="174.7762"></div>
       </div>
-      <div class="fg">
-        <div class="fl">TAGS</div>
-        <input class="fi" id="fTags" placeholder="coastal, farmland, hills, urban, paddock…">
-      </div>
-      <div class="fg">
-        <div class="fl">NOTES</div>
-        <textarea class="fta" id="fNotes" placeholder="Access, hazards, power lines, parking, landowner…"></textarea>
-      </div>
+      <div class="fg"><div class="fl">TAGS</div>
+        <input class="fi" id="fTags" placeholder="coastal, farmland, hills, urban, paddock…"></div>
+      <div class="fg"><div class="fl">NOTES</div>
+        <textarea class="fta" id="fNotes" placeholder="Access, hazards, power lines, parking, landowner…"></textarea></div>
       <button class="btn-add" id="btnAdd">⊕ ADD SPOT</button>
       <div class="add-note">
-        Terrain &amp; openness auto-analysed on add<br>
-        ⚠ Always verify airspace at <a href="https://airshare.co.nz" target="_blank">airshare.co.nz</a>
+        Terrain, openness &amp; airspace auto-analysed on add<br>
+        ⚠ Always verify at <a href="https://airshare.co.nz" target="_blank">airshare.co.nz</a> before flying
       </div>
     </div>
   </div>
@@ -428,79 +317,70 @@ a:hover{text-decoration:underline}
   <div class="panel" id="panel-intel">
     <div class="intel-body" id="intelBody">
       <div class="intel-empty">
-        <span style="font-size:28px;opacity:.35">◎</span>
+        <span style="font-size:28px;opacity:.3">◎</span>
         Select a spot marker<br>to load site intelligence
       </div>
     </div>
   </div>
-
 </aside>
 
-<!-- ════════════════════════════════════════════════════════
-     MAP AREA — toolbar sits ABOVE map so dropdowns never clip
-════════════════════════════════════════════════════════ -->
+<!-- MAP AREA -->
 <div class="map-area">
 
-  <!-- Toolbar strip -->
-  <div class="map-tb" id="mapTb">
+  <!-- Toolbar — sits ABOVE map so dropdowns never get clipped -->
+  <div class="map-tb">
 
-    <!-- Layer selector -->
-    <button class="tb-btn" id="btnLayer" title="Map layer">
+    <!-- Layer picker -->
+    <button class="tb-btn" id="btnLayer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       <span id="layerLabel">DARK</span>
     </button>
-
-    <!-- Layer dropdown — positioned absolutely to .map-tb, NOT inside #map -->
     <div class="layer-drop" id="layerDrop">
       <div class="ld-hd">MAP LAYER</div>
-      <div class="ld-item active" data-layer="dark">   <div class="ld-dot"></div>Dark</div>
-      <div class="ld-item" data-layer="light">         <div class="ld-dot" style="border-color:#38bdf8"></div>Light</div>
-      <div class="ld-item" data-layer="satellite">     <div class="ld-dot" style="border-color:#22c55e"></div>Satellite</div>
-      <div class="ld-item" data-layer="topo">          <div class="ld-dot" style="border-color:#a78bfa"></div>Topo</div>
-      <div class="ld-item" data-layer="street">        <div class="ld-dot" style="border-color:#fb923c"></div>Street</div>
+      <div class="ld-item active" data-layer="dark">  <div class="ld-dot"></div>Dark</div>
+      <div class="ld-item" data-layer="light">        <div class="ld-dot" style="border-color:#38bdf8"></div>Light</div>
+      <div class="ld-item" data-layer="satellite">    <div class="ld-dot" style="border-color:#22c55e"></div>Satellite</div>
+      <div class="ld-item" data-layer="topo">         <div class="ld-dot" style="border-color:#a78bfa"></div>Topo</div>
+      <div class="ld-item" data-layer="street">       <div class="ld-dot" style="border-color:#fb923c"></div>Street</div>
     </div>
 
     <div class="tb-sep"></div>
 
-    <!-- Zones toggle -->
-    <button class="tb-btn on" id="btnZones" title="Toggle airspace zones">
+    <button class="tb-btn on" id="btnZones">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       ZONES
     </button>
 
-    <!-- ADS-B toggle -->
-    <button class="tb-btn" id="btnAdsb" title="Live ADS-B traffic via airplanes.live">
+    <button class="tb-btn" id="btnAdsb">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>
       ADS-B
     </button>
 
-    <!-- Legend toggle -->
-    <button class="tb-btn" id="btnLegend" title="Toggle legend">
+    <button class="tb-btn on" id="btnWind">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+      WIND
+    </button>
+
+    <button class="tb-btn" id="btnLegend">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
       LEGEND
     </button>
 
     <div class="tb-sep"></div>
-
-    <!-- Status area -->
     <div class="tb-center">
-      <div class="tb-stat" id="tbAdsbStat" style="display:none">
-        <div class="tdot" id="tbDot"></div>
-        <span id="tbStatTxt">ADS-B initialising…</span>
+      <div class="tb-stat-chip" id="adsbChip" style="display:none">
+        <div class="ch-dot" id="adsbDot"></div>
+        <span id="adsbChipTxt"></span>
       </div>
     </div>
 
-    <!-- Right: Airshare link -->
     <a href="https://www.airshare.co.nz" target="_blank" class="tb-btn" style="text-decoration:none;margin-left:auto">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       AIRSHARE
     </a>
+  </div>
 
-  </div><!-- /map-tb -->
-
-  <!-- Map -->
   <div id="map">
-    <!-- Legend lives inside map but it's toggled separately -->
     <div class="map-legend" id="mapLegend">
       <div class="leg-hd">SCORE / ZONE KEY</div>
       <div class="leg-row"><div class="leg-sw" style="background:#10b981"></div>80–100  Optimal</div>
@@ -510,75 +390,74 @@ a:hover{text-decoration:underline}
       <div class="leg-row" style="border-top:1px solid var(--bd)"><div class="leg-sw" style="background:#c084fc;opacity:.8"></div>Class C / MIL CTR</div>
       <div class="leg-row"><div class="leg-sw" style="background:#fb923c;opacity:.8"></div>Class D CTR</div>
       <div class="leg-row"><div class="leg-sw" style="background:#facc15;opacity:.8"></div>4 km certified</div>
-      <div class="leg-row"><div class="leg-sw" style="background:#60a5fa;opacity:.8"></div>Gliding area</div>
-      <div class="leg-row" style="border-top:1px solid var(--bd)"><div class="leg-sw" style="background:#ef4444;border-radius:50%"></div>Aircraft &lt;300 m</div>
-      <div class="leg-row"><div class="leg-sw" style="background:#f97316;border-radius:50%"></div>Aircraft &lt;1000 m</div>
-      <div class="leg-row"><div class="leg-sw" style="background:#f59e0b;border-radius:50%"></div>Aircraft &lt;3000 m</div>
+      <div class="leg-row" style="border-top:1px solid var(--bd)"><div class="leg-sw" style="background:#ef4444;border-radius:50%"></div>Aircraft &lt;1000 ft</div>
+      <div class="leg-row"><div class="leg-sw" style="background:#f97316;border-radius:50%"></div>Aircraft &lt;3000 ft</div>
+      <div class="leg-row"><div class="leg-sw" style="background:#f59e0b;border-radius:50%"></div>Aircraft &lt;10000 ft</div>
     </div>
   </div>
 
-</div><!-- /map-area -->
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 'use strict';
 
 /* ══════════════════════════════════════════════════════════
-   NZ AERODROMES — CAA Part 101 / AIP NZ
-   ⚠ Zones are approximate. Verify on airshare.co.nz
+   NZ AERODROMES — medium & large airports only
+   Source: CAA Part 101 / AIP NZ. ⚠ Verify at airshare.co.nz
 ══════════════════════════════════════════════════════════ */
 const AD = [
-  {id:'NZAA',n:'Auckland Intl',          la:-37.0082,lo:174.7917,c:'C',r:9260},
-  {id:'NZWN',n:'Wellington Intl',         la:-41.3272,lo:174.8050,c:'C',r:9260},
-  {id:'NZCH',n:'Christchurch Intl',       la:-43.4894,lo:172.5322,c:'C',r:9260},
-  {id:'NZQN',n:'Queenstown',              la:-45.0211,lo:168.7389,c:'C',r:9260},
-  {id:'NZWP',n:'RNZAF Whenuapai',         la:-36.7878,lo:174.6306,c:'M',r:9260},
-  {id:'NZOH',n:'RNZAF Ohakea',            la:-40.2064,lo:175.3883,c:'M',r:9260},
-  {id:'NZMB',n:'RNZAF Woodbourne',        la:-41.5183,lo:173.8694,c:'M',r:9260},
-  {id:'NZHN',n:'Hamilton',                la:-37.8664,lo:175.3321,c:'D',r:5556},
-  {id:'NZTG',n:'Tauranga',                la:-37.6716,lo:176.1960,c:'D',r:5556},
-  {id:'NZDN',n:'Dunedin',                 la:-45.9281,lo:170.1983,c:'D',r:5556},
-  {id:'NZRO',n:'Rotorua',                 la:-38.1092,lo:176.3172,c:'D',r:5556},
-  {id:'NZPM',n:'Palmerston North',         la:-40.3206,lo:175.6168,c:'D',r:5556},
-  {id:'NZNS',n:'Nelson',                  la:-41.2983,lo:173.2211,c:'D',r:5556},
-  {id:'NZNR',n:'Napier Hawkes Bay',        la:-39.4658,lo:176.8700,c:'D',r:5556},
-  {id:'NZNV',n:'Invercargill',            la:-46.4124,lo:168.3131,c:'D',r:5556},
-  {id:'NZNP',n:'New Plymouth',            la:-39.0086,lo:174.1792,c:'D',r:5556},
-  {id:'NZWR',n:'Whangarei',               la:-35.7683,lo:174.3653,c:'D',r:5556},
-  {id:'NZGS',n:'Gisborne',                la:-38.6632,lo:177.9773,c:'D',r:5556},
-  {id:'NZAR',n:'Ardmore',                 la:-37.0297,lo:174.9730,c:'G',r:4000},
-  {id:'NZPP',n:'Paraparaumu',             la:-40.9047,lo:174.9894,c:'G',r:4000},
-  {id:'NZAP',n:'Taupo',                   la:-38.7397,lo:176.0840,c:'G',r:4000},
-  {id:'NZWF',n:'Wanaka',                  la:-44.7222,lo:169.2461,c:'G',r:4000},
-  {id:'NZTU',n:'Timaru',                  la:-44.3028,lo:171.2253,c:'G',r:4000},
-  {id:'NZHK',n:'Hokitika',                la:-42.7136,lo:170.9856,c:'G',r:4000},
-  {id:'NZWS',n:'Westport',                la:-41.7381,lo:171.5806,c:'G',r:4000},
-  {id:'NZGM',n:'Greymouth',               la:-42.4617,lo:171.1906,c:'G',r:4000},
-  {id:'NZWU',n:'Whanganui',               la:-39.9622,lo:175.0253,c:'G',r:4000},
-  {id:'NZMS',n:'Masterton Hood',          la:-40.9731,lo:175.6339,c:'G',r:4000},
-  {id:'NZKK',n:'Kerikeri',                la:-35.2628,lo:173.9117,c:'G',r:4000},
-  {id:'NZOU',n:'Oamaru',                  la:-44.9700,lo:171.0819,c:'G',r:4000},
-  {id:'NZRT',n:'Rangiora',                la:-43.2961,lo:172.5358,c:'G',r:4000},
-  {id:'NZFF',n:'Feilding',                la:-40.2311,lo:175.5822,c:'G',r:4000},
-  {id:'NZTK',n:'Takaka',                  la:-40.8136,lo:172.7753,c:'G',r:4000},
-  {id:'NZKA',n:'Kaitaia',                 la:-35.0697,lo:173.2856,c:'G',r:4000},
-  {id:'NZWK',n:'Whakatane',               la:-37.9206,lo:177.0153,c:'G',r:4000},
-  {id:'NZCX',n:'Coromandel',              la:-36.7911,lo:175.5072,c:'G',r:4000},
-  {id:'NZWV',n:'Wairoa',                  la:-39.0067,lo:177.4078,c:'G',r:4000},
-  {id:'NZBH',n:'Balclutha',               la:-46.2289,lo:169.7544,c:'G',r:3500},
-  {id:'NZIV',n:'Alexandra',               la:-45.2117,lo:169.3731,c:'G',r:3500},
-  {id:'NZNM',n:'Motueka',                 la:-41.1233,lo:173.0036,c:'G',r:3500},
-  {id:'GLID-OMA',n:'Omarama Gliding',     la:-44.5194,lo:169.9797,c:'GL',r:5000},
-  {id:'GLID-MAT',n:'Matamata Gliding',    la:-37.7289,lo:175.7736,c:'GL',r:4000},
-  {id:'GLID-FEI',n:'Feilding Gliding',    la:-40.2100,lo:175.5800,c:'GL',r:3500},
-  {id:'GLID-PUK',n:'Pukekohe Gliding',    la:-37.2000,lo:174.9000,c:'GL',r:3500},
+  // Class C — international, scheduled jet services
+  {id:'NZAA',n:'Auckland International',       la:-37.0082,lo:174.7917,c:'C',r:9260},
+  {id:'NZWN',n:'Wellington International',      la:-41.3272,lo:174.8050,c:'C',r:9260},
+  {id:'NZCH',n:'Christchurch International',    la:-43.4894,lo:172.5322,c:'C',r:9260},
+  {id:'NZQN',n:'Queenstown International',      la:-45.0211,lo:168.7389,c:'C',r:9260},
+  // Military CTR
+  {id:'NZWP',n:'RNZAF Whenuapai',               la:-36.7878,lo:174.6306,c:'M',r:9260},
+  {id:'NZOH',n:'RNZAF Ohakea',                  la:-40.2064,lo:175.3883,c:'M',r:9260},
+  {id:'NZMB',n:'RNZAF Woodbourne / Blenheim',   la:-41.5183,lo:173.8694,c:'M',r:9260},
+  // Class D — controlled, regional jet/turboprop services
+  {id:'NZHN',n:'Hamilton',                      la:-37.8664,lo:175.3321,c:'D',r:5556},
+  {id:'NZTG',n:'Tauranga',                      la:-37.6716,lo:176.1960,c:'D',r:5556},
+  {id:'NZDN',n:'Dunedin',                       la:-45.9281,lo:170.1983,c:'D',r:5556},
+  {id:'NZRO',n:'Rotorua',                       la:-38.1092,lo:176.3172,c:'D',r:5556},
+  {id:'NZPM',n:'Palmerston North',               la:-40.3206,lo:175.6168,c:'D',r:5556},
+  {id:'NZNS',n:'Nelson',                        la:-41.2983,lo:173.2211,c:'D',r:5556},
+  {id:'NZNR',n:'Napier / Hawkes Bay',            la:-39.4658,lo:176.8700,c:'D',r:5556},
+  {id:'NZNV',n:'Invercargill',                  la:-46.4124,lo:168.3131,c:'D',r:5556},
+  {id:'NZNP',n:'New Plymouth',                  la:-39.0086,lo:174.1792,c:'D',r:5556},
+  {id:'NZWR',n:'Whangarei',                     la:-35.7683,lo:174.3653,c:'D',r:5556},
+  {id:'NZGS',n:'Gisborne',                      la:-38.6632,lo:177.9773,c:'D',r:5556},
+  // Class G certified — active scheduled or freight services
+  {id:'NZAR',n:'Ardmore',                       la:-37.0297,lo:174.9730,c:'G',r:4000},
+  {id:'NZPP',n:'Paraparaumu',                   la:-40.9047,lo:174.9894,c:'G',r:4000},
+  {id:'NZAP',n:'Taupo',                         la:-38.7397,lo:176.0840,c:'G',r:4000},
+  {id:'NZWF',n:'Wanaka',                        la:-44.7222,lo:169.2461,c:'G',r:4000},
+  {id:'NZTU',n:'Timaru',                        la:-44.3028,lo:171.2253,c:'G',r:4000},
+  {id:'NZHK',n:'Hokitika',                      la:-42.7136,lo:170.9856,c:'G',r:4000},
+  {id:'NZWS',n:'Westport',                      la:-41.7381,lo:171.5806,c:'G',r:4000},
+  {id:'NZGM',n:'Greymouth',                     la:-42.4617,lo:171.1906,c:'G',r:4000},
+  {id:'NZWU',n:'Whanganui',                     la:-39.9622,lo:175.0253,c:'G',r:4000},
+  {id:'NZMS',n:'Masterton (Hood)',               la:-40.9731,lo:175.6339,c:'G',r:4000},
+  {id:'NZKK',n:'Kerikeri / Bay of Islands',     la:-35.2628,lo:173.9117,c:'G',r:4000},
+  {id:'NZOU',n:'Oamaru',                        la:-44.9700,lo:171.0819,c:'G',r:4000},
+  {id:'NZRT',n:'Rangiora',                      la:-43.2961,lo:172.5358,c:'G',r:4000},
+  {id:'NZTK',n:'Takaka / Golden Bay',            la:-40.8136,lo:172.7753,c:'G',r:4000},
+  {id:'NZKA',n:'Kaitaia',                       la:-35.0697,lo:173.2856,c:'G',r:4000},
+  {id:'NZWK',n:'Whakatane',                     la:-37.9206,lo:177.0153,c:'G',r:4000},
+  {id:'NZBH',n:'Balclutha',                     la:-46.2289,lo:169.7544,c:'G',r:3500},
+  {id:'NZIV',n:'Alexandra (Omakau)',             la:-45.2117,lo:169.3731,c:'G',r:3500},
+  {id:'NZNM',n:'Motueka',                       la:-41.1233,lo:173.0036,c:'G',r:3500},
+  {id:'NZFF',n:'Feilding',                      la:-40.2311,lo:175.5822,c:'G',r:3500},
 ];
-const DANGER=[
-  {n:'D109 Waiouru MTA',la:-39.45,lo:175.65,r:18000},
-  {n:'D220 Kaipara',    la:-36.52,lo:174.15,r:14000},
-  {n:'R110 Woodbourne', la:-41.52,lo:173.87,r:8500},
+
+const DANGER = [
+  {n:'D109 Waiouru Military Training Area',la:-39.45,lo:175.65,r:18000},
+  {n:'D220 Kaipara Danger Area',           la:-36.52,lo:174.15,r:14000},
+  {n:'R110 Woodbourne Restricted',         la:-41.52,lo:173.87,r:8500},
 ];
-const URBAN=[
+
+const URBAN = [
   {la:-36.8485,lo:174.7633,r:9000},{la:-41.2865,lo:174.7762,r:5500},
   {la:-43.5321,lo:172.6362,r:6500},{la:-37.7870,lo:175.2793,r:4500},
   {la:-37.6878,lo:176.1651,r:4000},{la:-45.8788,lo:170.5028,r:4000},
@@ -586,380 +465,605 @@ const URBAN=[
   {la:-39.0556,lo:174.0752,r:3000},{la:-41.2706,lo:173.2840,r:2800},
 ];
 
+// Major NZ cities for wind markers
+const WIND_CITIES = [
+  {n:'Auckland',   la:-36.8485,lo:174.7633},
+  {n:'Wellington', la:-41.2865,lo:174.7762},
+  {n:'Christchurch',la:-43.5321,lo:172.6362},
+  {n:'Hamilton',   la:-37.7870,lo:175.2793},
+  {n:'Tauranga',   la:-37.6878,lo:176.1651},
+  {n:'Dunedin',    la:-45.8788,lo:170.5028},
+  {n:'Queenstown', la:-45.0211,lo:168.7389},
+  {n:'Napier',     la:-39.4939,lo:176.9120},
+  {n:'Rotorua',    la:-38.1368,lo:176.2497},
+  {n:'New Plymouth',la:-39.0556,lo:174.0752},
+  {n:'Nelson',     la:-41.2706,lo:173.2840},
+  {n:'Whangarei',  la:-35.7251,lo:174.3236},
+];
+
 /* ══════════════════════════════════════════════════════════
    THEME
 ══════════════════════════════════════════════════════════ */
-const TK = 'fpv-theme';
+const TK = 'dfp-theme';
 const getTheme = () => localStorage.getItem(TK) || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
-const setTheme = t => { document.documentElement.setAttribute('data-theme',t); localStorage.setItem(TK,t); };
+const setTheme = t => { document.documentElement.setAttribute('data-theme', t); localStorage.setItem(TK, t); };
 setTheme(getTheme());
-document.getElementById('themeBtn').onclick = () => setTheme(getTheme()==='dark'?'light':'dark');
+document.getElementById('themeBtn').onclick = () => setTheme(getTheme() === 'dark' ? 'light' : 'dark');
 
 /* ══════════════════════════════════════════════════════════
    STORAGE
 ══════════════════════════════════════════════════════════ */
-const SK = 'nz-fpv-v5';
+const SK = 'dfp-spots-v1';
 let spots = [];
-try { spots = JSON.parse(localStorage.getItem(SK)||'[]'); } catch {}
+try { spots = JSON.parse(localStorage.getItem(SK) || '[]'); } catch {}
 const save   = ()  => localStorage.setItem(SK, JSON.stringify(spots));
-const upsert = s   => { const i=spots.findIndex(x=>x.id===s.id); i>=0?spots[i]=s:spots.push(s); save(); };
-const remove = id  => { spots=spots.filter(s=>s.id!==id); save(); };
+const upsert = s   => { const i = spots.findIndex(x => x.id === s.id); i >= 0 ? spots[i] = s : spots.push(s); save(); };
+const remove = id  => { spots = spots.filter(s => s.id !== id); save(); };
 
 /* ══════════════════════════════════════════════════════════
-   MAP
+   MAP INIT
 ══════════════════════════════════════════════════════════ */
-const map = L.map('map',{zoomControl:false}).setView([-41,174.8],6);
-L.control.zoom({position:'bottomright'}).addTo(map);
+const map = L.map('map', { zoomControl: false }).setView([-41, 174.8], 6);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 const TILES = {
-  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',  {attribution:'© OSM © CARTO',maxZoom:19,subdomains:'abcd'}),
-  light:     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {attribution:'© OSM © CARTO',maxZoom:19,subdomains:'abcd'}),
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
-  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',               {attribution:'© OpenTopoMap',maxZoom:17}),
-  street:    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',             {attribution:'© OpenStreetMap',maxZoom:19}),
+  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',   {attribution:'© OSM © CARTO', maxZoom:19, subdomains:'abcd'}),
+  light:     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',  {attribution:'© OSM © CARTO', maxZoom:19, subdomains:'abcd'}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {attribution:'© Esri', maxZoom:19}),
+  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',                {attribution:'© OpenTopoMap', maxZoom:17}),
+  street:    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',              {attribution:'© OpenStreetMap', maxZoom:19}),
 };
 
-let curTile = getTheme()==='light' ? 'light' : 'dark';
+let curTile = getTheme() === 'light' ? 'light' : 'dark';
 TILES[curTile].addTo(map);
 
 function switchTile(key) {
-  if (!TILES[key]||key===curTile) return;
+  if (!TILES[key] || key === curTile) return;
   map.removeLayer(TILES[curTile]);
   TILES[key].addTo(map);
   curTile = key;
-  document.querySelectorAll('.ld-item').forEach(el => el.classList.toggle('active',el.dataset.layer===key));
+  document.querySelectorAll('.ld-item').forEach(el => el.classList.toggle('active', el.dataset.layer === key));
   document.getElementById('layerLabel').textContent = key.toUpperCase();
 }
 
-/* Layer dropdown — opens from toolbar, no map clipping possible */
 const layerDrop = document.getElementById('layerDrop');
-document.getElementById('btnLayer').addEventListener('click', e => {
-  e.stopPropagation();
-  layerDrop.classList.toggle('open');
-});
+document.getElementById('btnLayer').addEventListener('click', e => { e.stopPropagation(); layerDrop.classList.toggle('open'); });
 document.addEventListener('click', () => layerDrop.classList.remove('open'));
 document.querySelectorAll('.ld-item').forEach(el => {
   el.classList.toggle('active', el.dataset.layer === curTile);
   el.addEventListener('click', e => { e.stopPropagation(); switchTile(el.dataset.layer); layerDrop.classList.remove('open'); });
 });
 
-/* Zones */
+/* ── Airspace zones ── */
 const zoneGroup = L.layerGroup().addTo(map);
 let zonesOn = true;
+
 AD.forEach(ad => {
-  let col,dsh,tip;
-  if(ad.c==='C')  {col='#c084fc';dsh='7 4';tip='Class C CTR — ATC authorisation required'}
-  else if(ad.c==='M'){col='#f87171';dsh='4 4';tip='Military CTR — no unauthorised entry'}
-  else if(ad.c==='D'){col='#fb923c';dsh='7 4';tip='Class D CTR — ATC authorisation required'}
-  else if(ad.c==='GL'){col='#60a5fa';dsh='3 9';tip='Gliding area — low-level soaring, no transponders'}
-  else             {col='#facc15';dsh='5 6';tip='Certified aerodrome — CAA Part 101.209: notify operator within 4 km'}
-  L.circle([ad.la,ad.lo],{radius:ad.r,color:col,weight:1.5,opacity:.85,fillColor:col,fillOpacity:.06,dashArray:dsh})
-    .addTo(zoneGroup)
-    .bindPopup(`<b style="font-size:13px">${ad.id} — ${ad.n}</b><br><span style="font-size:11px;opacity:.85">${tip}</span><br><a href="https://www.airshare.co.nz" target="_blank" style="font-size:10px">⚠ Verify on airshare.co.nz</a>`);
-  if(['C','D','M'].includes(ad.c))
-    L.circle([ad.la,ad.lo],{radius:ad.r+2000,color:col,weight:.7,opacity:.22,fill:false,dashArray:'2 10'}).addTo(zoneGroup);
+  let col, dash, tip;
+  if      (ad.c === 'C') { col = '#c084fc'; dash = '7 4'; tip = 'Class C CTR — ATC authorisation required'; }
+  else if (ad.c === 'M') { col = '#f87171'; dash = '4 4'; tip = 'Military CTR — no unauthorised entry'; }
+  else if (ad.c === 'D') { col = '#fb923c'; dash = '7 4'; tip = 'Class D CTR — ATC authorisation required'; }
+  else                   { col = '#facc15'; dash = '5 6'; tip = 'Certified aerodrome — CAA Part 101.209: notify operator within 4 km'; }
+
+  L.circle([ad.la, ad.lo], {
+    radius: ad.r, color: col, weight: 1.5, opacity: .85,
+    fillColor: col, fillOpacity: .06, dashArray: dash,
+  }).addTo(zoneGroup)
+    .bindPopup(`<b style="font-size:13px">${ad.id} — ${ad.n}</b><br><span style="font-size:11px;opacity:.85">${tip}</span><br><a href="https://www.airshare.co.nz" target="_blank" style="font-size:10px;color:#f59e0b">⚠ Verify on airshare.co.nz</a>`);
+
+  if (['C', 'D', 'M'].includes(ad.c))
+    L.circle([ad.la, ad.lo], {radius: ad.r + 2000, color: col, weight: .7, opacity: .22, fill: false, dashArray: '2 10'}).addTo(zoneGroup);
 });
-DANGER.forEach(d => L.circle([d.la,d.lo],{radius:d.r,color:'#f87171',weight:1,opacity:.45,fillColor:'#f87171',fillOpacity:.05,dashArray:'8 4'})
+
+DANGER.forEach(d => L.circle([d.la, d.lo], {radius: d.r, color: '#f87171', weight: 1, opacity: .45, fillColor: '#f87171', fillOpacity: .05, dashArray: '8 4'})
   .addTo(zoneGroup).bindPopup(`<b>${d.n}</b><br><span style="font-size:11px">Check NOTAM/AIP before operation</span>`));
 
-document.getElementById('btnZones').addEventListener('click', function() {
+document.getElementById('btnZones').addEventListener('click', function () {
   zonesOn = !zonesOn;
   zonesOn ? map.addLayer(zoneGroup) : map.removeLayer(zoneGroup);
   this.classList.toggle('on', zonesOn);
 });
 
-/* Legend toggle */
-document.getElementById('btnLegend').addEventListener('click', function() {
+document.getElementById('btnLegend').addEventListener('click', function () {
   this.classList.toggle('on');
   document.getElementById('mapLegend').classList.toggle('open');
 });
 
-/* ── Spot Markers ── */
+/* ── Spot markers ── */
 const spotGroup = L.layerGroup().addTo(map);
 const mCache = {};
 let selId = null;
 
 function scoreCol(s) {
-  if(s==null) return '#587fa0';
-  return s>=80?'#10b981':s>=60?'#84cc16':s>=40?'#f59e0b':s>0?'#f97316':'#c084fc';
+  if (s == null) return '#507a9c';
+  return s >= 80 ? '#10b981' : s >= 60 ? '#84cc16' : s >= 40 ? '#f59e0b' : s > 0 ? '#f97316' : '#c084fc';
 }
-function mkIcon(score,sel=false) {
-  const c=scoreCol(score), l=score!=null?score:'?';
+function mkIcon(score, sel = false) {
+  const c = scoreCol(score), l = score != null ? score : '?';
   return L.divIcon({
-    className:'',
-    html:`<div style="width:36px;height:36px;border-radius:50%;background:${c}${sel?'2a':'14'};border:2px solid ${c};display:flex;align-items:center;justify-content:center;font-family:'Overpass Mono',monospace;font-size:11px;font-weight:600;color:${c};box-shadow:0 0 ${sel?16:6}px ${c}${sel?'90':'50'};transition:all .25s">${l}</div>`,
-    iconSize:[36,36],iconAnchor:[18,18],
+    className: '',
+    html: `<div style="width:36px;height:36px;border-radius:50%;background:${c}${sel ? '28' : '14'};border:2px solid ${c};display:flex;align-items:center;justify-content:center;font-family:'Overpass Mono',monospace;font-size:11px;font-weight:600;color:${c};box-shadow:0 0 ${sel ? 16 : 6}px ${c}${sel ? '90' : '50'};transition:all .25s">${l}</div>`,
+    iconSize: [36, 36], iconAnchor: [18, 18],
   });
 }
 function redrawMarkers() {
-  Object.values(mCache).forEach(m=>map.removeLayer(m));
-  Object.keys(mCache).forEach(k=>delete mCache[k]);
-  spots.forEach(s=>{
-    const m=L.marker([s.la,s.lo],{icon:mkIcon(s.score??null,s.id===selId)}).addTo(spotGroup);
-    m.on('click',()=>selectSpot(s.id));
-    mCache[s.id]=m;
+  Object.values(mCache).forEach(m => map.removeLayer(m));
+  Object.keys(mCache).forEach(k => delete mCache[k]);
+  spots.forEach(s => {
+    const m = L.marker([s.la, s.lo], { icon: mkIcon(s.score ?? null, s.id === selId) }).addTo(spotGroup);
+    m.on('click', () => selectSpot(s.id));
+    mCache[s.id] = m;
   });
 }
 
-/* ════ ADS-B — airplanes.live (free, no key) ════════════════
-   Endpoint: https://api.airplanes.live/v2/point/{lat}/{lon}/{radius_nm}
-   alt_baro / alt_geom are in FEET
-   Rate limit: 1 req/s  →  we poll every 60s
-═══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   ADS-B — airplanes.live (free, no key required)
+   Radius scales with map zoom. Updates on map move.
+══════════════════════════════════════════════════════════ */
 const acGroup = L.layerGroup().addTo(map);
-let acOn=false, acTimer=null, acData=[];
+let acOn = false, acTimer = null, acMoveTimer = null, acData = [];
 
-function altFt(ac) { return ac.alt_baro !== undefined && ac.alt_baro !== 'ground' ? +ac.alt_baro : (ac.alt_geom ?? null); }
-function acCol(ft) { return ft==null?'#94a3b8':ft<1000?'#ef4444':ft<3300?'#f97316':ft<9900?'#f59e0b':'#94a3b8'; }
+function getAdsbRadius() {
+  const z = map.getZoom();
+  // At z6 (whole NZ): 150nm; zoom in to z10: 30nm
+  return Math.max(25, Math.min(150, Math.round(3800 / Math.pow(2, z - 4))));
+}
+
+function altFt(ac) {
+  const b = ac.alt_baro;
+  if (b !== undefined && b !== 'ground' && b !== null) return +b;
+  return ac.alt_geom ?? null;
+}
+
+function acCol(ft) {
+  if (ft == null) return '#94a3b8';
+  if (ft < 1000)  return '#ef4444';
+  if (ft < 3000)  return '#f97316';
+  if (ft < 10000) return '#f59e0b';
+  return '#94a3b8';
+}
 
 function mkAcIcon(ac) {
-  const ft = altFt(ac);
-  const c  = acCol(ft);
-  const trk= ac.track ?? 0;
-  const low= ft!=null && ft<1000;
+  const ft  = altFt(ac);
+  const c   = acCol(ft);
+  const trk = ac.track ?? ac.true_heading ?? 0;
+  const low = ft != null && ft < 3000;
   return L.divIcon({
-    className:'',
-    html:`<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:12px solid ${c};transform:rotate(${trk}deg);filter:drop-shadow(0 0 3px ${c}80);${low?'animation:acpulse 1s ease-in-out infinite':''}"></div>`,
-    iconSize:[10,12],iconAnchor:[5,6],
+    className: '',
+    html: `<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:14px solid ${c};transform:rotate(${trk}deg);filter:drop-shadow(0 0 4px ${c}90);${low ? 'animation:acpulse 1.1s ease-in-out infinite' : ''}"></div>`,
+    iconSize: [12, 14], iconAnchor: [6, 7],
   });
 }
 
 async function fetchAdsb() {
-  const dot  = document.getElementById('tbDot');
-  const txt  = document.getElementById('tbStatTxt');
-  txt.textContent = 'Fetching…'; dot.className='tdot amber';
+  const dot = document.getElementById('adsbDot');
+  const txt = document.getElementById('adsbChipTxt');
+  if (dot) { dot.className = 'ch-dot amb'; txt.textContent = 'Fetching…'; }
 
   try {
     const c = map.getCenter();
-    // radius 80 nm covers NZ well; airplanes.live max 250 nm
-    const r = await fetch(`https://api.airplanes.live/v2/point/${c.lat.toFixed(3)}/${c.lng.toFixed(3)}/80`);
-    if (!r.ok) throw new Error('HTTP '+r.status);
+    const nm = getAdsbRadius();
+    const r = await fetch(`https://api.airplanes.live/v2/point/${c.lat.toFixed(3)}/${c.lng.toFixed(3)}/${nm}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    acData = (d.ac || []).filter(a => a.lat != null && a.lon != null && a.alt_baro !== 'ground');
 
+    acData = (d.ac || []).filter(a => a.lat != null && a.lon != null && a.alt_baro !== 'ground');
     acGroup.clearLayers();
     acData.forEach(ac => {
-      const m = L.marker([ac.lat,ac.lon],{icon:mkAcIcon(ac)});
+      const m = L.marker([ac.lat, ac.lon], { icon: mkAcIcon(ac) });
       const ft  = altFt(ac);
-      const cs  = (ac.flight||ac.hex||'').trim();
-      const alt = ft!=null ? `${Math.round(ft)} ft / ${Math.round(ft*.3048)} m` : 'unknown alt';
+      const cs  = (ac.flight || ac.hex || '').trim();
+      const alt = ft != null ? `${Math.round(ft).toLocaleString()} ft / ${Math.round(ft * .3048)} m` : 'unknown';
       const spd = ac.gs ? `${Math.round(ac.gs)} kt` : '—';
-      m.bindPopup(`<b style="font-size:13px">${cs||ac.hex}</b><br><span style="font-size:11px">Alt: ${alt}<br>Speed: ${spd}<br>Type: ${ac.t||'—'}</span>`);
+      const atyp = ac.t || ac.category || '—';
+      m.bindPopup(`<b style="font-size:13px">${cs || ac.hex}</b><br><span style="font-size:11px">Alt: <b style="color:${acCol(ft)}">${alt}</b><br>Speed: ${spd} · Type: ${atyp}<br>Squawk: ${ac.squawk || '—'}</span>`);
       acGroup.addLayer(m);
     });
 
-    const low = acData.filter(a=>{ const ft=altFt(a); return ft!=null&&ft<1000; }).length;
-    txt.textContent = `${acData.length} aircraft · ${low} below 1000 ft`;
-    dot.className   = low>0 ? 'tdot red' : 'tdot green';
-  } catch(e) {
-    txt.textContent = 'ADS-B unavailable';
-    dot.className   = 'tdot amber';
-    console.warn('ADS-B fetch error:', e.message);
+    const u3k = acData.filter(a => { const f = altFt(a); return f != null && f < 3000; }).length;
+    const u1k = acData.filter(a => { const f = altFt(a); return f != null && f < 1000; }).length;
+    if (dot) {
+      dot.className = u1k > 0 ? 'ch-dot red' : u3k > 0 ? 'ch-dot amb' : 'ch-dot grn';
+      txt.textContent = `${acData.length} aircraft · ${u3k} <3000ft · ${nm}nm radius`;
+    }
+  } catch (e) {
+    if (dot) { dot.className = 'ch-dot amb'; txt.textContent = 'ADS-B unavailable'; }
+    console.warn('ADS-B:', e.message);
   }
 }
 
-document.getElementById('btnAdsb').addEventListener('click', function() {
+document.getElementById('btnAdsb').addEventListener('click', function () {
   acOn = !acOn;
   this.classList.toggle('on', acOn);
-  document.getElementById('tbAdsbStat').style.display = acOn ? 'flex' : 'none';
+  document.getElementById('adsbChip').style.display = acOn ? 'flex' : 'none';
   if (acOn) {
     fetchAdsb();
     acTimer = setInterval(fetchAdsb, 60000);
   } else {
     clearInterval(acTimer);
+    clearTimeout(acMoveTimer);
     acGroup.clearLayers();
     acData = [];
   }
 });
 
-/* ════ INTELLIGENCE ENGINE ══════════════════════════════════ */
-function hav(la1,lo1,la2,lo2) {
-  const R=6371000,r=Math.PI/180,dL=(la2-la1)*r,dO=(lo2-lo1)*r;
-  const a=Math.sin(dL/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dO/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+// Re-fetch when user moves the map (debounced 2s)
+map.on('moveend', () => {
+  if (!acOn) return;
+  clearTimeout(acMoveTimer);
+  acMoveTimer = setTimeout(fetchAdsb, 2000);
+});
+
+/* ══════════════════════════════════════════════════════════
+   WIND MARKERS — current wind for major NZ cities
+══════════════════════════════════════════════════════════ */
+const windGroup = L.layerGroup().addTo(map);
+let windOn = true, windTimer = null;
+
+function windSpeedCol(spd) {
+  return spd < 10 ? '#10b981' : spd < 20 ? '#38bdf8' : spd < 30 ? '#f59e0b' : spd < 45 ? '#f97316' : '#ef4444';
 }
 
-async function fetchWeather(la,lo) {
+function mkWindIcon(dir, spd, city) {
+  const c = windSpeedCol(spd);
+  // Arrow points WHERE wind is going (add 180 to convert from meteorological "coming from")
+  const arrowDeg = (dir + 180) % 360;
+  return L.divIcon({
+    className: '',
+    html: `<div class="wm">
+      <div class="wm-arrow" style="transform:rotate(${arrowDeg}deg)">
+        <svg width="22" height="22" viewBox="0 0 22 22">
+          <path d="M11 18 L11 4" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M7 8 L11 4 L15 8" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="wm-spd" style="background:${c}22;color:${c};border:1px solid ${c}55">${Math.round(spd)}</div>
+      <div class="wm-city">${city}</div>
+    </div>`,
+    iconSize: [60, 52], iconAnchor: [30, 20],
+  });
+}
+
+async function fetchWindMarkers() {
+  if (!windOn) return;
+  // Batch-fetch current wind for all cities in parallel
+  const results = await Promise.allSettled(
+    WIND_CITIES.map(city =>
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.la}&longitude=${city.lo}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=Pacific%2FAuckland`)
+        .then(r => r.json())
+        .then(d => ({ ...city, wx: d.current }))
+    )
+  );
+
+  windGroup.clearLayers();
+  results.forEach(res => {
+    if (res.status !== 'fulfilled' || !res.value.wx) return;
+    const { la, lo, n, wx } = res.value;
+    const dir = wx.wind_direction_10m, spd = wx.wind_speed_10m, gust = wx.wind_gusts_10m;
+    const m = L.marker([la, lo], { icon: mkWindIcon(dir, spd, n), zIndexOffset: -100 });
+    m.bindPopup(`<b style="font-size:13px">${n}</b><br>
+      <span style="font-size:11px">
+        Wind: <b>${Math.round(spd)} km/h</b> from ${dirLabel(dir)} (${Math.round(dir)}°)<br>
+        Gusts: ${Math.round(gust)} km/h
+      </span>`);
+    windGroup.addLayer(m);
+  });
+
+  windTimer = setTimeout(fetchWindMarkers, 600000); // refresh every 10 min
+}
+
+document.getElementById('btnWind').addEventListener('click', function () {
+  windOn = !windOn;
+  this.classList.toggle('on', windOn);
+  if (windOn) { windGroup.addTo(map); fetchWindMarkers(); }
+  else { clearTimeout(windTimer); map.removeLayer(windGroup); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   INTELLIGENCE ENGINE
+══════════════════════════════════════════════════════════ */
+
+function hav(la1, lo1, la2, lo2) {
+  const R = 6371000, r = Math.PI / 180, dL = (la2-la1)*r, dO = (lo2-lo1)*r;
+  const a = Math.sin(dL/2)**2 + Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Current weather + 4h forecast
+async function fetchWeather(la, lo) {
   try {
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,cloud_cover,weather_code&hourly=wind_speed_10m,wind_gusts_10m,precipitation,weather_code&wind_speed_unit=kmh&timezone=Pacific%2FAuckland&forecast_days=1`);
-    const d=await r.json();
-    return {current:d.current||null,hourly:d.hourly||null};
-  } catch { return {current:null,hourly:null}; }
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,cloud_cover,weather_code&hourly=wind_speed_10m,wind_gusts_10m,precipitation,weather_code&wind_speed_unit=kmh&timezone=Pacific%2FAuckland&forecast_days=1`);
+    const d = await r.json();
+    return { current: d.current || null, hourly: d.hourly || null };
+  } catch { return { current: null, hourly: null }; }
 }
 
-function extractFc(hourly,n=4) {
-  if(!hourly?.time) return [];
-  const now=new Date(), idx=hourly.time.findIndex(t=>new Date(t)>=now);
-  const start=Math.max(0,idx<0?hourly.time.length-n:idx);
-  return Array.from({length:n},(_,i)=>{
-    const j=start+i;
-    if(j>=hourly.time.length) return null;
-    return {time:hourly.time[j],wind:hourly.wind_speed_10m[j],gust:hourly.wind_gusts_10m[j],rain:hourly.precipitation[j],code:hourly.weather_code[j]};
+// Historical wind — last 30 days via Open-Meteo archive
+async function fetchHistoricalWind(la, lo) {
+  try {
+    const now  = new Date();
+    const end  = new Date(now); end.setDate(end.getDate() - 1);
+    const start= new Date(now); start.setDate(start.getDate() - 31);
+    const fmt  = d => d.toISOString().split('T')[0];
+    const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${la}&longitude=${lo}&start_date=${fmt(start)}&end_date=${fmt(end)}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh&timezone=Pacific%2FAuckland`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const spds = d.hourly?.wind_speed_10m || [];
+    const dirs = d.hourly?.wind_direction_10m || [];
+    if (!spds.length) return null;
+
+    // Circular (vector) mean direction — weighted by speed
+    let sx = 0, sy = 0, totalSpd = 0;
+    dirs.forEach((deg, i) => {
+      if (deg == null || spds[i] == null) return;
+      const rad = deg * Math.PI / 180;
+      sx += Math.cos(rad) * spds[i];
+      sy += Math.sin(rad) * spds[i];
+      totalSpd += spds[i];
+    });
+    const prevDir = Math.round(((Math.atan2(sy, sx) * 180 / Math.PI) + 360) % 360);
+    const avgSpd  = Math.round(totalSpd / spds.length);
+    const maxSpd  = Math.round(Math.max(...spds.filter(x => x != null)));
+
+    // Best flying window: lowest average wind by hour-of-day
+    const byHour = Array.from({length: 24}, () => []);
+    spds.forEach((s, i) => { if (s != null) byHour[i % 24].push(s); });
+    const hourAvg = byHour.map(h => h.length ? h.reduce((a,b) => a+b,0)/h.length : 999);
+    const bestHour = hourAvg.indexOf(Math.min(...hourAvg));
+
+    return { prevDir, avgSpd, maxSpd, bestHour, n: spds.length };
+  } catch (e) {
+    console.warn('Historical wind:', e.message);
+    return null;
+  }
+}
+
+function extractFc(hourly, n = 4) {
+  if (!hourly?.time) return [];
+  const now = new Date(), idx = hourly.time.findIndex(t => new Date(t) >= now);
+  const start = Math.max(0, idx < 0 ? hourly.time.length - n : idx);
+  return Array.from({length: n}, (_, i) => {
+    const j = start + i;
+    if (j >= hourly.time.length) return null;
+    return { time: hourly.time[j], wind: hourly.wind_speed_10m[j], gust: hourly.wind_gusts_10m[j], rain: hourly.precipitation[j], code: hourly.weather_code[j] };
   }).filter(Boolean);
 }
 
-async function fetchTerrain(la,lo) {
+async function fetchTerrain(la, lo) {
   try {
-    const pts=[[0,0],[.012,0],[-.012,0],[0,.015],[0,-.015],[.008,.008],[-.008,-.008]];
-    const las=pts.map(p=>(la+p[0]).toFixed(5)).join(','), los=pts.map(p=>(lo+p[1]).toFixed(5)).join(',');
-    const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${las}&longitude=${los}`);
-    const d=await r.json(), e=d.elevation||[0], c=e[0];
-    const v=e.slice(1).reduce((a,x)=>a+Math.abs(x-c),0)/Math.max(e.length-1,1);
-    return {score:Math.round(v<5?98:v<15?84:v<35?66:v<70?44:v<120?22:10),elev:Math.round(c),variance:Math.round(v)};
-  } catch { return {score:50,elev:0,variance:0}; }
+    const pts = [[0,0],[.012,0],[-.012,0],[0,.015],[0,-.015],[.008,.008],[-.008,-.008]];
+    const las = pts.map(p => (la+p[0]).toFixed(5)).join(',');
+    const los = pts.map(p => (lo+p[1]).toFixed(5)).join(',');
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${las}&longitude=${los}`);
+    const d = await r.json(), e = d.elevation || [0], c = e[0];
+    const v = e.slice(1).reduce((a,x) => a+Math.abs(x-c), 0) / Math.max(e.length-1, 1);
+    const s = v < 5 ? 98 : v < 15 ? 84 : v < 35 ? 66 : v < 70 ? 44 : v < 120 ? 22 : 10;
+    return { score: Math.round(s), elev: Math.round(c), variance: Math.round(v) };
+  } catch { return { score: 50, elev: 0, variance: 0 }; }
 }
 
-async function fetchOpen(la,lo) {
+async function fetchOpen(la, lo) {
   try {
-    const q=`[out:json][timeout:18];(way["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});relation["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});way["landuse"~"^(residential|commercial|industrial|retail)$"](around:600,${la.toFixed(5)},${lo.toFixed(5)}););out count;`;
-    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:q,headers:{'Content-Type':'text/plain'}});
-    const d=await r.json(), n=parseInt(d.elements?.[0]?.tags?.total??0);
-    if(n===0) return {label:'Open Rural',score:95,n};
-    if(n<5)   return {label:'Rural',score:80,n};
-    if(n<18)  return {label:'Semi-Rural',score:62,n};
-    if(n<45)  return {label:'Light Suburban',score:42,n};
-    if(n<110) return {label:'Suburban',score:22,n};
-    return          {label:'Dense Urban',score:8,n};
-  } catch { return {label:'Undetermined',score:50,n:null}; }
+    const q = `[out:json][timeout:18];(way["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});relation["building"](around:400,${la.toFixed(5)},${lo.toFixed(5)});way["landuse"~"^(residential|commercial|industrial|retail)$"](around:600,${la.toFixed(5)},${lo.toFixed(5)}););out count;`;
+    const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:q, headers:{'Content-Type':'text/plain'} });
+    const d = await r.json(), n = parseInt(d.elements?.[0]?.tags?.total ?? 0);
+    if (n===0) return {label:'Open Rural',     score:95, n};
+    if (n<5)   return {label:'Rural',           score:80, n};
+    if (n<18)  return {label:'Semi-Rural',      score:62, n};
+    if (n<45)  return {label:'Light Suburban',  score:42, n};
+    if (n<110) return {label:'Suburban',        score:22, n};
+    return           {label:'Dense Urban',      score:8,  n};
+  } catch { return { label:'Undetermined', score:50, n:null }; }
 }
 
-function checkAir(la,lo) {
-  let best=null,bd=Infinity;
-  for(const ad of AD) {
-    const d=hav(la,lo,ad.la,ad.lo);
-    if(d<=ad.r&&d<bd)                          {bd=d;best={st:'blocked',ad,d};}
-    else if(d<=ad.r+2200&&['C','D','M'].includes(ad.c)&&d<bd){bd=d;best={st:'buffer',ad,d};}
+function checkAir(la, lo) {
+  let best = null, bd = Infinity;
+  for (const ad of AD) {
+    const d = hav(la, lo, ad.la, ad.lo);
+    if (d <= ad.r && d < bd)                                      { bd = d; best = {st:'blocked', ad, d}; }
+    else if (d <= ad.r + 2200 && ['C','D','M'].includes(ad.c) && d < bd) { bd = d; best = {st:'buffer', ad, d}; }
   }
-  return best||{st:'clear',ad:null,d:null};
-}
-function calcRF(la,lo) {
-  let s=100;
-  for(const u of URBAN){const d=hav(la,lo,u.la,u.lo);if(d<u.r)s-=48;else if(d<u.r*2)s-=24;else if(d<u.r*4)s-=9;}
-  return Math.max(0,s);
-}
-function calcAc(la,lo) {
-  if(!acOn||!acData.length) return {score:null,n:0,low:0};
-  const near=acData.filter(a=>a.lat&&a.lon&&hav(la,lo,a.lat,a.lon)<10000);
-  const low=near.filter(a=>{const ft=altFt(a);return ft!=null&&ft<1000;}).length;
-  return {score:low===0?100:low===1?72:low<4?42:12,n:near.length,low};
-}
-function calcWx(wx) {
-  if(!wx) return 50;
-  const w=wx.wind_speed_10m??0,g=wx.wind_gusts_10m??0,p=wx.precipitation??0;
-  return Math.round((w<=8?100:w<=16?88:w<=24?65:w<=35?32:0)*.40+(g<=12?100:g<=22?82:g<=32?52:g<=45?20:0)*.35+(p===0?100:p<=.2?68:p<=1?28:0)*.25);
+  return best || {st:'clear', ad:null, d:null};
 }
 
-/* Drone suitability
-   caps[i] = min open.score needed to achieve i stars
-   5" and 7" cannot score well in suburban / urban — caps enforce this            */
-const DRONES=[
-  {name:'Tiny Whoop', spec:'<85mm · <100g',  maxW:14,maxG:18,maxR:.2, minT:10, caps:[0,8, 20,38,55,72]},
-  {name:'3" Cinewhoop',spec:'3in · ~250g',   maxW:26,maxG:32,maxR:.3, minT:15, caps:[0,22,38,55,72,86]},
-  {name:'5" Freestyle',spec:'5in · ~600g',   maxW:44,maxG:52,maxR:.8, minT:22, caps:[0,55,68,78,88,95]},
-  {name:'7"+ Long Range',spec:'7in+ · >1kg', maxW:54,maxG:62,maxR:1.5,minT:30, caps:[0,72,82,88,93,97]},
+function calcRF(la, lo) {
+  let s = 100;
+  URBAN.forEach(u => { const d = hav(la,lo,u.la,u.lo); if(d<u.r)s-=48; else if(d<u.r*2)s-=24; else if(d<u.r*4)s-=9; });
+  return Math.max(0, s);
+}
+
+function calcAc(la, lo) {
+  if (!acOn || !acData.length) return { score: null, n: 0, u3k: 0, u1k: 0 };
+  const near = acData.filter(a => a.lat && a.lon && hav(la,lo,a.lat,a.lon) < 10000);
+  const u3k = near.filter(a => { const f=altFt(a); return f!=null&&f<3000; }).length;
+  const u1k = near.filter(a => { const f=altFt(a); return f!=null&&f<1000; }).length;
+  const score = u1k === 0 && u3k === 0 ? 100 : u1k > 0 ? 15 : u3k < 3 ? 65 : 30;
+  return { score, n: near.length, u3k, u1k };
+}
+
+function calcWx(wx) {
+  if (!wx) return 50;
+  const w=wx.wind_speed_10m??0, g=wx.wind_gusts_10m??0, p=wx.precipitation??0;
+  return Math.round(
+    (w<=8?100:w<=16?88:w<=24?65:w<=35?32:0)*.40 +
+    (g<=12?100:g<=22?82:g<=32?52:g<=45?20:0)*.35 +
+    (p===0?100:p<=.2?68:p<=1?28:0)*.25
+  );
+}
+
+// Historical wind penalty — if historically windy, reduce score slightly
+function calcHistPenalty(hist) {
+  if (!hist) return 0;
+  if (hist.avgSpd > 40) return -12;
+  if (hist.avgSpd > 28) return -6;
+  if (hist.avgSpd > 18) return -2;
+  return 0;
+}
+
+const DRONES = [
+  {name:'Tiny Whoop',    spec:'<85mm · <100g',  maxW:14, maxG:18, maxR:.2,  minT:10, caps:[0,8, 20,38,55,72]},
+  {name:'3" Cinewhoop',  spec:'3in · ~250g',     maxW:26, maxG:32, maxR:.3,  minT:15, caps:[0,22,38,55,72,86]},
+  {name:'5" Freestyle',  spec:'5in · ~600g',     maxW:44, maxG:52, maxR:.8,  minT:22, caps:[0,55,68,78,88,95]},
+  {name:'7"+ Long Range',spec:'7in+ · >1kg',     maxW:54, maxG:62, maxR:1.5, minT:30, caps:[0,72,82,88,93,97]},
 ];
-function calcDrones(wx,terrain,open) {
-  const w=wx?.wind_speed_10m??15, g=wx?.wind_gusts_10m??20, r=wx?.precipitation??0, o=open.score;
-  return DRONES.map(d=>{
-    let maxStars=0;
-    for(let i=5;i>=1;i--){if(o>=d.caps[i]){maxStars=i;break;}}
-    const wOk=w<=d.maxW, gOk=g<=d.maxG, rOk=r<=d.maxR, tOk=terrain.score>=d.minT;
-    const cf=(wOk?.40:Math.max(0,.40*(1-Math.min((w-d.maxW)/d.maxW,1))))
-            +(gOk?.35:Math.max(0,.35*(1-Math.min((g-d.maxG)/d.maxG,1))))
-            +(rOk?.15:0)+(tOk?.10:0);
-    const condStars=Math.round(cf*5), stars=Math.min(maxStars,condStars);
-    const blocked=maxStars===0;
-    const verdict=blocked?'Too confined / urban':!rOk?'Rain too heavy':!wOk?'Wind too strong':!gOk?'Gusts too high':stars>=4?'Ready to fly':stars>=2?'Flyable with care':'Marginal';
-    return {...d,stars,maxStars,blocked,verdict};
+
+function calcDrones(wx, terrain, open) {
+  const w = wx?.wind_speed_10m ?? 15, g = wx?.wind_gusts_10m ?? 20;
+  const r = wx?.precipitation ?? 0, o = open.score;
+  return DRONES.map(d => {
+    let maxStars = 0;
+    for (let i = 5; i >= 1; i--) { if (o >= d.caps[i]) { maxStars = i; break; } }
+    const wOk = w <= d.maxW, gOk = g <= d.maxG, rOk = r <= d.maxR, tOk = terrain.score >= d.minT;
+    const cf = (wOk ? .40 : Math.max(0, .40*(1-Math.min((w-d.maxW)/d.maxW,1)))) +
+               (gOk ? .35 : Math.max(0, .35*(1-Math.min((g-d.maxG)/d.maxG,1)))) +
+               (rOk ? .15 : 0) + (tOk ? .10 : 0);
+    const condStars = Math.round(cf * 5), stars = Math.min(maxStars, condStars);
+    const blocked = maxStars === 0;
+    const verdict = blocked ? 'Too confined/urban' : !rOk ? 'Rain too heavy' : !wOk ? 'Wind too strong' : !gOk ? 'Gusts too high' : stars >= 4 ? 'Ready to fly' : stars >= 2 ? 'Flyable with care' : 'Marginal';
+    return { ...d, stars, maxStars, blocked, verdict };
   });
 }
-function composite(wxS,terrain,rf,open,air,ac) {
-  if(air.st==='blocked') return 0;
-  let s=wxS*.28+terrain.score*.17+rf*.12+open.score*.24+(air.st==='clear'?100:40)*.09;
-  if(ac.score!=null) s=s*.90+ac.score*.10; else s/=.90;
-  if(air.st==='buffer') s*=.82;
-  return Math.max(0,Math.min(100,Math.round(s)));
-}
-async function evalSpot(spot) {
-  const [wxRes,terrain,open]=await Promise.all([fetchWeather(spot.la,spot.lo),fetchTerrain(spot.la,spot.lo),fetchOpen(spot.la,spot.lo)]);
-  const {current:wx,hourly}=wxRes, forecast=extractFc(hourly,4);
-  const air=checkAir(spot.la,spot.lo), rf=calcRF(spot.la,spot.lo), ac=calcAc(spot.la,spot.lo);
-  const wxS=calcWx(wx), score=composite(wxS,terrain,rf,open,air,ac);
-  const drones=calcDrones(wx,terrain,open);
-  return {score,wx,forecast,terrain,open,air,rf,ac,wxS,drones};
+
+function composite(wxS, terrain, rf, open, air, ac, histPenalty) {
+  if (air.st === 'blocked') return 0;
+  let s = wxS*.28 + terrain.score*.17 + rf*.12 + open.score*.24 + (air.st === 'clear' ? 100 : 40)*.09;
+  if (ac.score != null) s = s * .90 + ac.score * .10; else s /= .90;
+  if (air.st === 'buffer') s *= .82;
+  s = Math.max(0, Math.min(100, Math.round(s + histPenalty)));
+  return s;
 }
 
-/* ════ RENDER FUNCTIONS ═════════════════════════════════════ */
-function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-const WD=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-function wdir(d){return WD[Math.round(d/22.5)%16];}
-function wmo(c){if(!c&&c!==0)return'?';if(c===0)return'☀';if(c<=3)return'⛅';if(c<=9)return'☁';if(c<=49)return'🌫';if(c<=59)return'🌦';if(c<=69)return'🌧';if(c<=79)return'❄';if(c<=84)return'🌦';return'⛈';}
-function fmt12(t){try{const d=new Date(t),h=d.getHours()%12||12,m=d.getMinutes();return h+(m?':'+String(m).padStart(2,'0'):'')+(d.getHours()>=12?'pm':'am');}catch{return '';}}
+async function evalSpot(spot) {
+  // Fetch current data and terrain/openness in parallel
+  const [wxRes, terrain, open] = await Promise.all([
+    fetchWeather(spot.la, spot.lo),
+    fetchTerrain(spot.la, spot.lo),
+    fetchOpen(spot.la, spot.lo),
+  ]);
+  const { current: wx, hourly } = wxRes;
+  const forecast = extractFc(hourly, 4);
+  const air = checkAir(spot.la, spot.lo);
+  const rf  = calcRF(spot.la, spot.lo);
+  const ac  = calcAc(spot.la, spot.lo);
+  const wxS = calcWx(wx);
+  const drones = calcDrones(wx, terrain, open);
+  const score  = composite(wxS, terrain, rf, open, air, ac, 0);
+  return { score, wx, forecast, terrain, open, air, rf, ac, wxS, drones, hist: null };
+}
+
+// Fetch historical wind separately (slower — runs async after main render)
+async function enrichWithHistory(spot, I, onUpdate) {
+  const hist = await fetchHistoricalWind(spot.la, spot.lo);
+  if (!hist) return;
+  const newScore = composite(I.wxS, I.terrain, I.rf, I.open, I.air, I.ac, calcHistPenalty(hist));
+  onUpdate({ ...I, hist, score: newScore });
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════════ */
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+const WD = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+function dirLabel(d) { return WD[Math.round(d / 22.5) % 16]; }
+function wmo(c) { if(!c&&c!==0)return'?'; if(c===0)return'☀'; if(c<=3)return'⛅'; if(c<=9)return'☁'; if(c<=49)return'🌫'; if(c<=59)return'🌦'; if(c<=69)return'🌧'; if(c<=79)return'❄'; return'⛈'; }
+function fmt12(t) { try { const d=new Date(t),h=d.getHours()%12||12,m=d.getMinutes(); return h+(m?':'+String(m).padStart(2,'0'):'')+(d.getHours()>=12?'pm':'am'); } catch { return ''; } }
 
 function renderList() {
-  const q=document.getElementById('spotSearch').value.toLowerCase();
-  const srt=document.getElementById('spotSort').value;
-  let list=spots.filter(s=>!q||(s.name||'').toLowerCase().includes(q));
-  if(srt==='score') list.sort((a,b)=>(b.score??-1)-(a.score??-1));
-  if(srt==='name')  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  if(srt==='date')  list.sort((a,b)=>b.id-a.id);
-  const el=document.getElementById('spotsList');
-  if(!list.length){el.innerHTML=`<div class="spots-empty">◎ No spots yet<br><br>Click the map to add<br>your first FPV site</div>`;setTabCt(0);return;}
-  el.innerHTML=list.map(s=>`<div class="spot-row${s.id===selId?' sel':''}" data-id="${s.id}">
-    <div style="flex:1;min-width:0">
-      <div class="spot-name">${esc(s.name)}</div>
-      <div class="spot-sub">${(s.la||0).toFixed(4)}, ${(s.lo||0).toFixed(4)}${s.openLabel?' · '+s.openLabel:''}</div>
-    </div>
-    <div class="score-ring" style="color:${scoreCol(s.score)}">${s.score!=null?s.score:'—'}</div>
-  </div>`).join('');
-  el.querySelectorAll('.spot-row').forEach(r=>r.addEventListener('click',()=>{
-    const id=+r.dataset.id, sp=spots.find(x=>x.id===id);
-    if(sp) map.setView([sp.la,sp.lo],14,{animate:true});
-    selectSpot(id);
-  }));
-  setTabCt(spots.length);
-}
-function setTabCt(n) {
-  const btn=document.querySelector('[data-tab="spots"]');
-  let ct=btn.querySelector('.nav-ct');
-  if(!n){if(ct)ct.remove();return;}
-  if(!ct){ct=document.createElement('span');ct.className='nav-ct';btn.appendChild(ct);}
-  ct.textContent=n;
+  const q = document.getElementById('spotSearch').value.toLowerCase();
+  const srt = document.getElementById('spotSort').value;
+  let list = spots.filter(s => !q || (s.name || '').toLowerCase().includes(q));
+  if (srt === 'score') list.sort((a,b) => (b.score??-1) - (a.score??-1));
+  if (srt === 'name')  list.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  if (srt === 'date')  list.sort((a,b) => b.id - a.id);
+  const el = document.getElementById('spotsList');
+  if (!list.length) { el.innerHTML = `<div class="spots-empty">◎ No spots yet<br><br>Click anywhere on the map<br>to add your first site</div>`; setCtBadge(0); return; }
+  el.innerHTML = list.map(s => `
+    <div class="spot-row${s.id === selId ? ' sel' : ''}" data-id="${s.id}">
+      <div style="flex:1;min-width:0">
+        <div class="spot-name">${esc(s.name)}</div>
+        <div class="spot-sub">${(s.la||0).toFixed(4)}, ${(s.lo||0).toFixed(4)}${s.openLabel ? ' · '+s.openLabel : ''}</div>
+      </div>
+      <div class="score-ring" style="color:${scoreCol(s.score)}">${s.score != null ? s.score : '—'}</div>
+    </div>`).join('');
+  el.querySelectorAll('.spot-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = +row.dataset.id, sp = spots.find(x => x.id === id);
+      if (sp) map.setView([sp.la, sp.lo], 14, {animate:true});
+      selectSpot(id);
+    });
+  });
+  setCtBadge(spots.length);
 }
 
-function showLoading(){document.getElementById('intelBody').innerHTML=`<div class="intel-load" style="flex:1;padding:60px 20px"><div class="spin"></div><div>ACQUIRING DATA…</div></div>`;}
+function setCtBadge(n) {
+  const btn = document.querySelector('[data-tab="spots"]');
+  let ct = btn.querySelector('.nav-ct');
+  if (!n) { if (ct) ct.remove(); return; }
+  if (!ct) { ct = document.createElement('span'); ct.className = 'nav-ct'; btn.appendChild(ct); }
+  ct.textContent = n;
+}
 
-function renderIntel(spot,I) {
-  const {score,wx,forecast,terrain,open,air,rf,ac,wxS,drones}=I;
-  const c=scoreCol(score);
+function showLoading() {
+  document.getElementById('intelBody').innerHTML = `<div class="intel-load" style="flex:1;padding:60px 20px"><div class="spin"></div><div>ACQUIRING DATA…</div></div>`;
+}
 
-  const airHtml=air.st==='blocked'
-    ?`<div class="alert alert-blk">⛔ CONTROLLED — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>${(air.d/1000).toFixed(1)} km from centre · ATC / CAA auth required<br><a href="https://www.airshare.co.nz" target="_blank">→ airshare.co.nz</a></div>`
-    :air.st==='buffer'
-    ?`<div class="alert alert-warn">⚠ APPROACH BUFFER — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>${(air.d/1000).toFixed(1)} km from boundary · Check before flying</div>`
-    :`<div class="alert alert-ok">✓ CLEAR — No active CTR at this location</div>`;
+function buildIntelHTML(spot, I) {
+  const { score, wx, forecast, terrain, open, air, rf, ac, wxS, drones, hist } = I;
+  const c = scoreCol(score);
 
-  const subsHtml=`<div class="g2">${[
-    {l:'WEATHER',v:wxS},{l:'TERRAIN',v:terrain.score},
-    {l:'OPENNESS',v:open.score},{l:'RF',v:rf},
-  ].map(s=>`<div class="tile"><div class="t-lbl">${s.l}</div>
+  const airHtml = air.st === 'blocked'
+    ? `<div class="alert alert-blk">⛔ CONTROLLED — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>${(air.d/1000).toFixed(1)} km from centre · ATC/CAA auth required · <a href="https://www.airshare.co.nz" target="_blank">airshare.co.nz</a></div>`
+    : air.st === 'buffer'
+    ? `<div class="alert alert-warn">⚠ CTR BUFFER — ${esc(air.ad.id)} ${esc(air.ad.n)}<br>${(air.d/1000).toFixed(1)} km from boundary · Check before flying</div>`
+    : `<div class="alert alert-ok">✓ AIRSPACE CLEAR — No active CTR at this location</div>`;
+
+  const subsHtml = `<div class="g2">${[
+    {l:'WEATHER', v:wxS}, {l:'TERRAIN', v:terrain.score},
+    {l:'OPENNESS',v:open.score}, {l:'RF',v:rf},
+  ].map(s => `<div class="tile"><div class="t-lbl">${s.l}</div>
     <div class="t-val" style="color:${scoreCol(s.v)}">${s.v}</div>
     <div class="t-bar"><div class="t-fill" style="width:${s.v}%;background:${scoreCol(s.v)}"></div></div>
   </div>`).join('')}</div>`;
 
-  const fcHtml=forecast.length?`<div class="fc-strip">${forecast.map(f=>{
-    const bad=f.wind>35||f.rain>2||f.code>60, warn=!bad&&(f.wind>20||f.rain>0.3||f.code>3);
-    const wc=f.wind>35?'#ef4444':f.wind>20?'#f59e0b':'#10b981';
+  const fcHtml = forecast.length ? `<div class="fc-strip">${forecast.map(f => {
+    const bad = f.wind > 35 || f.rain > 2 || f.code > 60, warn = !bad && (f.wind > 20 || f.rain > .3 || f.code > 3);
+    const wc = f.wind > 35 ? '#ef4444' : f.wind > 20 ? '#f59e0b' : '#10b981';
     return `<div class="fc-cell${bad?' bad':warn?' warn':''}">
       ${bad?'<div class="fc-badge">⚠</div>':''}
       <div class="fc-time">${fmt12(f.time)}</div>
       <div class="fc-ico">${wmo(f.code)}</div>
       <div class="fc-wind" style="color:${wc}">${Math.round(f.wind)}<span style="font-size:8px;opacity:.7"> km/h</span></div>
-      <div class="fc-rain">${f.rain>0?f.rain.toFixed(1)+'mm':'Dry'}</div>
+      <div class="fc-rain">${f.rain > 0 ? f.rain.toFixed(1)+'mm' : 'Dry'}</div>
     </div>`;
-  }).join('')}</div>`:`<div class="info" style="color:var(--tx3)">Forecast unavailable</div>`;
+  }).join('')}</div>` : `<div class="info" style="color:var(--tx3)">Forecast unavailable</div>`;
 
-  const droneHtml=`<div class="drone-grid">${drones.map(d=>`
+  // Prevailing wind section
+  let prevWindHtml;
+  if (!hist) {
+    prevWindHtml = `<div class="info" style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9px;color:var(--tx3)"><div class="spin" style="width:16px;height:16px;border-width:1.5px"></div>Loading 30-day wind history…</div>`;
+  } else {
+    const hc = windSpeedCol(hist.avgSpd);
+    const arrowDeg = (hist.prevDir + 180) % 360; // show where wind goes
+    const bh = hist.bestHour;
+    const bhStr = bh < 12 ? `${bh === 0 ? 12 : bh}am` : bh === 12 ? '12pm' : `${bh-12}pm`;
+    prevWindHtml = `<div class="wind-card">
+      <div class="wind-compass">
+        <svg class="wind-arrow-svg" style="transform:rotate(${arrowDeg}deg)" width="40" height="40" viewBox="0 0 40 40">
+          <path d="M20 32 L20 8" stroke="${hc}" stroke-width="3" stroke-linecap="round"/>
+          <path d="M13 15 L20 8 L27 15" stroke="${hc}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <div style="position:absolute;bottom:3px;font-family:var(--mono);font-size:8px;color:var(--tx3)">${dirLabel(hist.prevDir)}</div>
+      </div>
+      <div class="wind-stats">
+        <div>Direction: <span class="wind-val">${dirLabel(hist.prevDir)}</span> <span style="color:var(--tx3)">(${hist.prevDir}°)</span></div>
+        <div>Avg speed: <span class="wind-val">${hist.avgSpd} km/h</span></div>
+        <div>Max recorded: <span style="color:var(--tx2)">${hist.maxSpd} km/h</span></div>
+        <div>Best flying: <span class="wind-val">~${bhStr}</span> <span style="color:var(--tx3)">(calmest hour)</span></div>
+      </div>
+    </div>`;
+  }
+
+  const droneHtml = `<div class="drone-grid">${drones.map(d => `
     <div class="dc${d.blocked?' blk':''}">
       <div class="dc-name">${d.name}</div>
       <div class="dc-spec">${d.spec}</div>
@@ -970,30 +1074,38 @@ function renderIntel(spot,I) {
       <div class="dc-verdict" style="color:${d.blocked?'#f87171':d.stars>=4?'#10b981':d.stars>=2?'#f59e0b':'#f97316'}">${esc(d.verdict)}</div>
     </div>`).join('')}</div>`;
 
-  const wxHtml=wx?`<div class="g3">
+  const wxHtml = wx ? `<div class="g3">
     <div class="tile-sm"><div class="ts-lbl">WIND</div><div class="ts-val">${Math.round(wx.wind_speed_10m)}<span class="ts-u"> km/h</span></div></div>
     <div class="tile-sm"><div class="ts-lbl">GUSTS</div><div class="ts-val">${Math.round(wx.wind_gusts_10m)}<span class="ts-u"> km/h</span></div></div>
-    <div class="tile-sm"><div class="ts-lbl">DIR</div><div class="ts-val">${Math.round(wx.wind_direction_10m)}°<span class="ts-u"> ${wdir(wx.wind_direction_10m)}</span></div></div>
+    <div class="tile-sm"><div class="ts-lbl">FROM</div><div class="ts-val" style="font-size:12px">${dirLabel(wx.wind_direction_10m)} ${Math.round(wx.wind_direction_10m)}°</div></div>
     <div class="tile-sm"><div class="ts-lbl">RAIN</div><div class="ts-val">${wx.precipitation}<span class="ts-u"> mm</span></div></div>
     <div class="tile-sm"><div class="ts-lbl">CLOUD</div><div class="ts-val">${wx.cloud_cover}<span class="ts-u"> %</span></div></div>
     <div class="tile-sm"><div class="ts-lbl">ELEV</div><div class="ts-val">${terrain.elev}<span class="ts-u"> m</span></div></div>
   </div>
-  <div class="info">${wmo(wx.weather_code)} ${['Clear','Partly cloudy','Overcast','Fog','Drizzle','Rain','Snow','Showers','Thunderstorm',''][wx.weather_code===0?0:wx.weather_code<=3?1:wx.weather_code<=9?2:wx.weather_code<=49?3:wx.weather_code<=59?4:wx.weather_code<=69?5:wx.weather_code<=79?6:wx.weather_code<=84?7:wx.weather_code<=99?8:9]||''} · Terrain Δ ±${terrain.variance} m</div>`
-  :`<div class="info">Weather unavailable · Elevation: ${terrain.elev} m</div>`;
+  <div class="info">${wmo(wx.weather_code)} ${['Clear','Partly cloudy','Overcast','Fog','Drizzle','Rain','Snow','Showers','Thunderstorm','Unknown'][wx.weather_code===0?0:wx.weather_code<=3?1:wx.weather_code<=9?2:wx.weather_code<=49?3:wx.weather_code<=59?4:wx.weather_code<=69?5:wx.weather_code<=79?6:wx.weather_code<=84?7:wx.weather_code<=99?8:9]||''} · Terrain Δ ±${terrain.variance} m</div>`
+  : `<div class="info">Weather unavailable · Elevation: ${terrain.elev} m</div>`;
 
-  const acHtml=`<div class="info">${ac.score==null
-    ?'⊙ Enable ADS-B in the toolbar to score live air traffic near this spot'
-    :`${ac.n} aircraft within 10 km · <span style="color:${ac.low>0?'#ef4444':'#10b981'};font-weight:600">${ac.low} below 1000 ft</span><br>Traffic score: <span style="color:${scoreCol(ac.score)}">${ac.score}/100</span>`
+  const acHtml = `<div class="info">${ac.score == null
+    ? '⊙ Enable ADS-B (toolbar) to score live air traffic near this spot'
+    : `${ac.n} aircraft within 10 km<br>
+       <span style="color:${ac.u1k>0?'#ef4444':'var(--tx2)'}">${ac.u1k} below 1000 ft</span> · 
+       <span style="color:${ac.u3k>0?'#f97316':'var(--tx2)'}">${ac.u3k} below 3000 ft</span><br>
+       Traffic score: <span style="color:${scoreCol(ac.score)}">${ac.score}/100</span>`
   }</div>`;
 
-  const tagsH=spot.tags?.length?`<div class="sec-hd">TAGS</div><div class="tags-wrap">${spot.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:'';
-  const noteH=spot.notes?`<div class="sec-hd">NOTES</div><div class="info">${esc(spot.notes)}</div>`:'';
+  const tagsH = spot.tags?.length ? `<div class="sec-hd">TAGS</div><div class="tags-wrap">${spot.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : '';
+  const noteH = spot.notes ? `<div class="sec-hd">NOTES</div><div class="info">${esc(spot.notes)}</div>` : '';
+  const updAt = new Date().toLocaleTimeString('en-NZ', {hour:'2-digit',minute:'2-digit'});
 
-  document.getElementById('intelBody').innerHTML=`
+  return `
     <div class="hero">
       <div class="hero-txt">
         <div class="hero-name">${esc(spot.name)}</div>
-        <div class="hero-meta">${spot.la.toFixed(5)}, ${spot.lo.toFixed(5)}<br>${open.label} · ${terrain.elev} m ASL<br>${new Date(spot.id).toLocaleDateString('en-NZ',{day:'numeric',month:'short',year:'numeric'})}</div>
+        <div class="hero-meta">
+          ${spot.la.toFixed(5)}, ${spot.lo.toFixed(5)}<br>
+          ${open.label} · ${terrain.elev} m ASL<br>
+          <span style="color:var(--tx3)">Updated ${updAt}</span>
+        </div>
       </div>
       <div class="big-ring" style="border-color:${c};box-shadow:0 0 14px ${c}30">
         <div class="big-num" style="color:${c}">${score}</div>
@@ -1001,111 +1113,195 @@ function renderIntel(spot,I) {
       </div>
     </div>
 
+    <div class="refresh-bar"><div class="rdot"></div>Live data — auto-refreshes every 15 min</div>
+
     <div class="sec"><div class="sec-hd">AIRSPACE</div>${airHtml}</div>
     <div class="sec"><div class="sec-hd">COMPONENT SCORES</div>${subsHtml}</div>
     <div class="sec"><div class="sec-hd">DRONE SUITABILITY</div>${droneHtml}</div>
     <div class="sec"><div class="sec-hd">4-HOUR FORECAST</div>${fcHtml}</div>
     <div class="sec"><div class="sec-hd">CURRENT CONDITIONS</div>${wxHtml}</div>
-    <div class="sec"><div class="sec-hd">ADS-B TRAFFIC (10 km)</div>${acHtml}</div>
+    <div class="sec" id="histWind"><div class="sec-hd">PREVAILING WIND <span style="font-size:8px;letter-spacing:1px;opacity:.6">(30-DAY)</span></div>${prevWindHtml}</div>
+    <div class="sec"><div class="sec-hd">ADS-B TRAFFIC (10 km · &lt;3000 ft threshold)</div>${acHtml}</div>
     <div class="sec"><div class="sec-hd">SITE ANALYSIS</div>
-      <div class="info">Environment: <span style="color:var(--acc);font-weight:600">${esc(open.label)}</span>${open.n!=null?' ('+open.n+' structures within 400 m)':''}<br>Terrain: ±${terrain.variance} m variance · ${terrain.elev} m ASL</div>
+      <div class="info">Environment: <span style="color:var(--acc);font-weight:600">${esc(open.label)}</span>${open.n != null ? ' ('+open.n+' structures within 400 m)' : ''}<br>Terrain: ±${terrain.variance} m variance · ${terrain.elev} m ASL</div>
     </div>
-    ${tagsH?'<div class="sec"><div class="sec-hd">TAGS</div>'+tagsH+'</div>':''}
-    ${noteH?'<div class="sec">'+noteH+'</div>':''}
+    ${tagsH ? '<div class="sec"><div class="sec-hd">TAGS</div>'+tagsH+'</div>' : ''}
+    ${noteH ? '<div class="sec">'+noteH+'</div>' : ''}
     <div class="sec"><div class="act-row">
       <button class="abtn" id="bAS">↗ Airshare</button>
-      <button class="abtn" id="bRe">↻ Re-evaluate</button>
+      <button class="abtn" id="bRe">↻ Refresh</button>
       <button class="abtn-del" id="bDel">⊗ Delete</button>
     </div></div>
-    <div class="fine">Composite: Weather 28% · Openness 24% · Terrain 17% · RF 12% · Airspace 9% · ADS-B 10%<br>⚠ Zones approximate — always verify airshare.co.nz + check NOTAM/AIP</div>`;
+    <div class="fine">Composite: Weather 28% · Openness 24% · Terrain 17% · RF 12% · Airspace 9% · ADS-B 10%<br>⚠ Zones approximate — always verify airshare.co.nz + check NOTAM/AIP before flying</div>`;
+}
 
-  document.getElementById('bAS').onclick  = ()=>window.open(`https://www.airshare.co.nz/interactive-map?lat=${spot.la}&lng=${spot.lo}&zoom=13`,'_blank');
-  document.getElementById('bRe').onclick  = ()=>selectSpot(spot.id);
-  document.getElementById('bDel').onclick = ()=>{
-    if(!confirm(`Delete "${spot.name}"?`)) return;
+function renderIntel(spot, I) {
+  document.getElementById('intelBody').innerHTML = buildIntelHTML(spot, I);
+  document.getElementById('bAS').onclick = () => window.open(`https://www.airshare.co.nz/interactive-map?lat=${spot.la}&lng=${spot.lo}&zoom=13`, '_blank');
+  document.getElementById('bRe').onclick = () => selectSpot(spot.id);
+  document.getElementById('bDel').onclick = () => {
+    if (!confirm(`Delete "${spot.name}"?`)) return;
     remove(spot.id);
-    if(mCache[spot.id]) map.removeLayer(mCache[spot.id]);
+    if (mCache[spot.id]) map.removeLayer(mCache[spot.id]);
     delete mCache[spot.id];
-    selId=null; renderList(); switchTab('spots');
-    document.getElementById('intelBody').innerHTML=`<div class="intel-empty"><span style="font-size:28px;opacity:.35">◎</span>Select a spot to load intelligence</div>`;
+    selId = null;
+    clearAutoRefresh();
+    renderList();
+    switchTab('spots');
+    document.getElementById('intelBody').innerHTML = `<div class="intel-empty"><span style="font-size:28px;opacity:.3">◎</span>Select a spot to load intelligence</div>`;
   };
 }
 
-/* ════ SELECT SPOT ══════════════════════════════════════════ */
-async function selectSpot(id) {
-  selId=id;
-  const spot=spots.find(s=>s.id===id);
-  if(!spot) return;
-  switchTab('intel'); showLoading(); redrawMarkers(); renderList();
-  const I=await evalSpot(spot);
-  spot.score=I.score; spot.openLabel=I.open.label;
-  upsert(spot);
-  renderIntel(spot,I); redrawMarkers(); renderList();
+/* ══════════════════════════════════════════════════════════
+   SELECT SPOT + AUTO-REFRESH
+══════════════════════════════════════════════════════════ */
+let autoRefreshTimer = null;
+
+function clearAutoRefresh() {
+  clearInterval(autoRefreshTimer);
+  autoRefreshTimer = null;
 }
 
-/* ════ ADD SPOT ═════════════════════════════════════════════ */
-let prevM=null;
-async function revGeo(la,lo) {
+async function selectSpot(id) {
+  selId = id;
+  const spot = spots.find(s => s.id === id);
+  if (!spot) return;
+
+  switchTab('intel');
+  showLoading();
+  clearAutoRefresh();
+  redrawMarkers();
+  renderList();
+
+  // Fetch main intel
+  const I = await evalSpot(spot);
+  spot.score = I.score;
+  spot.openLabel = I.open.label;
+  upsert(spot);
+
+  renderIntel(spot, I);
+  redrawMarkers();
+  renderList();
+
+  // Load historical wind async — update just the prevailing wind section when ready
+  enrichWithHistory(spot, I, updatedI => {
+    const histEl = document.getElementById('histWind');
+    if (!histEl || selId !== spot.id) return; // user navigated away
+    const hc = windSpeedCol(updatedI.hist.avgSpd);
+    const arrowDeg = (updatedI.hist.prevDir + 180) % 360;
+    const bh = updatedI.hist.bestHour;
+    const bhStr = bh < 12 ? `${bh === 0 ? 12 : bh}am` : bh === 12 ? '12pm' : `${bh-12}pm`;
+    histEl.innerHTML = `<div class="sec-hd">PREVAILING WIND <span style="font-size:8px;letter-spacing:1px;opacity:.6">(30-DAY)</span></div>
+    <div class="wind-card">
+      <div class="wind-compass">
+        <svg style="transform:rotate(${arrowDeg}deg)" width="40" height="40" viewBox="0 0 40 40">
+          <path d="M20 32 L20 8" stroke="${hc}" stroke-width="3" stroke-linecap="round"/>
+          <path d="M13 15 L20 8 L27 15" stroke="${hc}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <div style="position:absolute;bottom:3px;font-family:var(--mono);font-size:8px;color:var(--tx3)">${dirLabel(updatedI.hist.prevDir)}</div>
+      </div>
+      <div class="wind-stats">
+        <div>Direction: <span class="wind-val">${dirLabel(updatedI.hist.prevDir)}</span> <span style="color:var(--tx3)">(${updatedI.hist.prevDir}°)</span></div>
+        <div>Avg speed: <span class="wind-val">${updatedI.hist.avgSpd} km/h</span></div>
+        <div>Max recorded: <span style="color:var(--tx2)">${updatedI.hist.maxSpd} km/h</span></div>
+        <div>Best flying: <span class="wind-val">~${bhStr}</span> <span style="color:var(--tx3)">(calmest hour)</span></div>
+      </div>
+    </div>`;
+    // Update score if historical data changed it
+    if (updatedI.score !== I.score) {
+      const ringEl = document.querySelector('.big-num');
+      if (ringEl) ringEl.textContent = updatedI.score;
+      spot.score = updatedI.score;
+      upsert(spot);
+      redrawMarkers();
+    }
+  });
+
+  // Auto-refresh every 15 minutes (weather changes)
+  autoRefreshTimer = setInterval(() => {
+    if (selId === id && document.getElementById('panel-intel').classList.contains('active')) {
+      selectSpot(id);
+    }
+  }, 900000);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ADD SPOT
+══════════════════════════════════════════════════════════ */
+let prevM = null;
+
+async function revGeo(la, lo) {
   try {
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=14`,{headers:{'Accept-Language':'en'}});
-    const d=await r.json(), a=d.address||{};
-    return [a.suburb||a.village||a.town||a.locality||'',a.city||a.region||a.state||''].filter(Boolean).join(', ');
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=14`, {headers:{'Accept-Language':'en'}});
+    const d = await r.json(), a = d.address || {};
+    return [a.suburb||a.village||a.town||a.locality||'', a.city||a.region||a.state||''].filter(Boolean).join(', ');
   } catch { return ''; }
 }
 
 map.on('click', async e => {
-  const {lat:la,lng:lo}=e.latlng;
-  document.getElementById('fLat').value=la.toFixed(6);
-  document.getElementById('fLon').value=lo.toFixed(6);
-  if(prevM) map.removeLayer(prevM);
-  prevM=L.marker([la,lo],{icon:L.divIcon({
-    className:'',
-    html:`<div style="width:13px;height:13px;border-radius:50%;background:var(--acc,#38bdf8);border:2px solid #fff;box-shadow:0 0 8px var(--acc,#38bdf8)80"></div>`,
-    iconSize:[13,13],iconAnchor:[6,6]
-  })}).addTo(map);
+  const {lat: la, lng: lo} = e.latlng;
+  document.getElementById('fLat').value = la.toFixed(6);
+  document.getElementById('fLon').value = lo.toFixed(6);
+  if (prevM) map.removeLayer(prevM);
+  prevM = L.marker([la, lo], {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="width:13px;height:13px;border-radius:50%;background:var(--acc,#38bdf8);border:2px solid #fff;box-shadow:0 0 8px var(--acc,#38bdf8)80"></div>`,
+      iconSize: [13, 13], iconAnchor: [6, 6]
+    })
+  }).addTo(map);
   switchTab('add');
-  document.getElementById('addHint').textContent=`◉ Placed at ${la.toFixed(4)}, ${lo.toFixed(4)} — enter name and tap ADD`;
+  document.getElementById('addHint').textContent = `◉ Placed at ${la.toFixed(4)}, ${lo.toFixed(4)} — enter name and tap ADD`;
   document.getElementById('fName').focus();
-  const sug=await revGeo(la,lo);
-  if(sug&&!document.getElementById('fName').value)
-    document.getElementById('fName').placeholder=sug;
+  const sug = await revGeo(la, lo);
+  if (sug && !document.getElementById('fName').value)
+    document.getElementById('fName').placeholder = sug;
 });
 
-document.getElementById('btnAdd').addEventListener('click',()=>{
-  const ne=document.getElementById('fName');
-  const name=(ne.value.trim()||ne.placeholder||'').replace(/^Auto-suggest.*/i,'').trim();
-  const la=parseFloat(document.getElementById('fLat').value);
-  const lo=parseFloat(document.getElementById('fLon').value);
-  if(!name){alert('Enter a spot name, or click the map for an auto-suggestion.');return;}
-  if(isNaN(la)||isNaN(lo)){alert('Click the map to set a location first.');return;}
-  const spot={id:Date.now(),name,la:+la.toFixed(7),lo:+lo.toFixed(7),
-    tags:document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean),
-    notes:document.getElementById('fNotes').value.trim(),
-    score:undefined,openLabel:undefined};
-  ['fName','fTags','fNotes'].forEach(id=>{
-    const el=document.getElementById(id);el.value='';
-    if(id==='fName')el.placeholder='Auto-suggested when you click the map…';
+document.getElementById('btnAdd').addEventListener('click', () => {
+  const ne = document.getElementById('fName');
+  const name = (ne.value.trim() || ne.placeholder || '').replace(/^Auto-suggest.*/i,'').trim();
+  const la = parseFloat(document.getElementById('fLat').value);
+  const lo = parseFloat(document.getElementById('fLon').value);
+  if (!name) { alert('Enter a spot name, or click the map for an auto-suggestion.'); return; }
+  if (isNaN(la) || isNaN(lo)) { alert('Click the map to set a location first.'); return; }
+  const spot = {
+    id: Date.now(), name, la: +la.toFixed(7), lo: +lo.toFixed(7),
+    tags: document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    notes: document.getElementById('fNotes').value.trim(),
+    score: undefined, openLabel: undefined,
+  };
+  ['fName','fTags','fNotes'].forEach(id => {
+    const el = document.getElementById(id); el.value = '';
+    if (id === 'fName') el.placeholder = 'Auto-suggested when you click the map…';
   });
-  document.getElementById('fLat').value=document.getElementById('fLon').value='';
-  document.getElementById('addHint').textContent='◎ Click the map to drop a pin — coordinates fill automatically and location name is suggested';
-  if(prevM){map.removeLayer(prevM);prevM=null;}
-  upsert(spot); selectSpot(spot.id);
+  document.getElementById('fLat').value = document.getElementById('fLon').value = '';
+  document.getElementById('addHint').textContent = '◎ Click anywhere on the map — coords fill automatically and a name is suggested from the location';
+  if (prevM) { map.removeLayer(prevM); prevM = null; }
+  upsert(spot);
+  selectSpot(spot.id);
 });
 
-/* ════ NAV ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   NAV + EVENTS
+══════════════════════════════════════════════════════════ */
 function switchTab(name) {
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${name}`));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`));
+  if (name !== 'intel') clearAutoRefresh();
 }
-document.querySelectorAll('.nav-btn').forEach(b=>{
-  b.addEventListener('click',()=>{switchTab(b.dataset.tab);if(b.dataset.tab==='spots')renderList();});
+document.querySelectorAll('.nav-btn').forEach(b => {
+  b.addEventListener('click', () => { switchTab(b.dataset.tab); if (b.dataset.tab === 'spots') renderList(); });
 });
-document.getElementById('spotSearch').addEventListener('input',renderList);
-document.getElementById('spotSort').addEventListener('change',renderList);
+document.getElementById('spotSearch').addEventListener('input', renderList);
+document.getElementById('spotSort').addEventListener('change', renderList);
 
-/* ════ BOOT ═════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════════ */
 redrawMarkers();
 renderList();
+fetchWindMarkers(); // start wind markers immediately
 </script>
 </body>
 </html>
